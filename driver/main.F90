@@ -2,6 +2,7 @@ program main
   use iso_fortran_env, only: r8=>real64 ! double precision
   use dynamo_interface_mod
   use apex
+  use inputdata_mod, only: inputdata_read
   use mpi_module, only: mpi_rank, mpi_size, lat_size, lon_size
   use params_module,only: nmlat_h, nmlon, nhgt_fix, hgt_fix_r
 
@@ -55,6 +56,9 @@ program main
   write(*,*) prefix,'call dynamo_init2 ...'
   ! after apex init
   call dynamo_init2()
+
+  write(*,*) prefix,'call inputdata_read ...'
+  call inputdata_read('../data/FX2000_ne16pg3_wcmx_3Dedyn_test02.cam.h5i.0001-01-01-00000.nc')
 
   write(*,*) prefix,'DONE...'
 
