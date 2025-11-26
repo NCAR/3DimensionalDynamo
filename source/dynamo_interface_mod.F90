@@ -415,7 +415,6 @@ contains
 
        do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)
           fac_hl_loc(isn,j,i) = fac_hl_p(isn,j,i)*M3_p(1,isn,j,i)
-
        enddo
 
     end if
@@ -425,7 +424,7 @@ contains
 
     if (read_pot) then ! pot_hl is input, fac_hl is output
       do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)
-         fac_hl_p(isn,j,i) = fac_hl_loc(isn,j,i)/M3_p(1,isn,j,i)
+        fac_hl_p(isn,j,i) = fac_hl_loc(isn,j,i)/M3_p(1,isn,j,i)
       enddo
     endif
 
