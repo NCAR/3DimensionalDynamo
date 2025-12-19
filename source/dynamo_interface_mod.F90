@@ -25,11 +25,12 @@ module dynamo_interface_mod
   use alloc_module, only: alloc_fieldline, dealloc_fieldline
 
   use fieldline_module, only: F_p,F_s1,F_s2,F_r,M3_p,M1_s1,M2_s2,M3_r
-  use fieldline_module, only: be3_s1,be3_s2,bmag_p,D1_s1,D1_s2,d1d1_s1,d1d2_s1,d1d2_s2
+  use fieldline_module, only: be3_s1,be3_s2,bmag_p,vmp_p,D1_s1,D1_s2,d1d1_s1,d1d2_s1,d1d2_s2
   use fieldline_module, only: d2_s1,d2_s2,d2d2_s1,d2d2_s2,d_s1,d_s2,e1_s1,e1_s2,e2_s1,e2_s2
 
   use calculate_terms_module, only: calculate_n, calculate_je
   use calculate_terms_module, only: calculate_ed, calculate_ve, calculate_vxyz
+  use calculate_terms_module, only: calculate_conductance, balance_fac_hl
 
   use stencil_module, only: calculate_coef2d, calculate_coef3d
   use stencil_module, only: calculate_bij
@@ -218,9 +219,9 @@ contains
   subroutine dynamo_calc( &
        sigped_s1, sighal_s1, un_s1, vn_s1, &
        sigped_s2, sighal_s2, un_s2, vn_s2, &
-       pot_hl_p, fac_hl_p, &
+       sigped_p, pot_hl_p, fac_hl_p, &
        ui_s1, vi_s1, wi_s1, ui_s2, vi_s2, wi_s2, &
-       elec_pot_p, &
+       elec_pot_p, ped_cond_p, &
        efld1_s1, efld2_s1, efld1_s2, efld2_s2, &
        ionvel1_s1, ionvel2_s1, ionvel1_s2, ionvel2_s2)
 
@@ -235,6 +236,8 @@ contains
     real(rp), intent(in) :: un_s2(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
     real(rp), intent(in) :: vn_s2(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
 
+    real(rp), intent(in) :: sigped_p(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
+
     real(rp), intent(in) :: pot_hl_p(2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp), intent(inout) :: fac_hl_p(2,mlatd0:mlatd1,mlond0:mlond1)
 
@@ -247,6 +250,7 @@ contains
     real(rp), intent(out) :: wi_s2(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
 
     real(rp), optional, intent(out) :: elec_pot_p(2,mlat0:mlat1,mlon0:mlon1)
+    real(rp), optional, intent(out) :: ped_cond_p(2,mlat0:mlat1,mlon0:mlon1)
 
     real(rp), optional, intent(out) :: efld1_s1(2,mlat0:mlat1,mlon0:mlon1)
     real(rp), optional, intent(out) :: efld2_s1(2,mlat0:mlat1,mlon0:mlon1)
@@ -264,6 +268,7 @@ contains
 
     real(rp) :: tmp_ghost(4,nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
 
+    real(rp) :: sigP_p(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: sigP_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: sigH_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: sigP_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
@@ -290,6 +295,7 @@ contains
     real(rp) :: bij(mlatd0:mlatd1,mlond0:mlond1)
 
     real(rp) :: pot_p(2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: zigP_p(2,mlatd0:mlatd1,mlond0:mlond1)
 
     real(rp) :: ed1_s1(2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: ed2_s1(2,mlatd0:mlatd1,mlond0:mlond1)
@@ -307,6 +313,16 @@ contains
     real(rp) :: vx_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: vy_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: vz_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+
+    real(rp) :: fac_hl_loc(2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp), parameter :: thres = 0.5_rp
+    integer :: i, isn, j
+
+    ! exchange P ghost points
+    tmp_ghost(1,:,:,mlat0:mlat1,mlon0:mlon1) = sigped_p(:,:,mlat0:mlat1,mlon0:mlon1)
+    call sync_mlat_5d(tmp_ghost(1:1,:,:,:,mlon0:mlon1), 1, nhgt_fix, 2)
+    call sync_mlon_5d(tmp_ghost(1:1,:,:,:,:), 1, nhgt_fix, 2)
+    sigP_p(:,:,:,:) = tmp_ghost(1,:,:,:,:)
 
     ! exchange S1 ghost points
     tmp_ghost(1,:,:,mlat0:mlat1,mlon0:mlon1) = sigped_s1(:,:,mlat0:mlat1,mlon0:mlon1)
@@ -332,6 +348,15 @@ contains
     sigH_s2(:,:,:,:) = tmp_ghost(2,:,:,:,:)
     ntlU_s2(:,:,:,:) = tmp_ghost(3,:,:,:,:)
     ntlV_s2(:,:,:,:) = tmp_ghost(4,:,:,:,:)
+
+    ! calculate field-line integrated conductance - P
+    call calculate_conductance( &
+         mlatd0,mlatd1,mlond0,mlond1, &
+         npts_p,vmp_p,bmag_p,sigP_p,zigP_p)
+
+    if (present(ped_cond_p)) then
+       ped_cond_p(:,mlat0:mlat1,mlon0:mlon1) = zigP_p(:,mlat0:mlat1,mlon0:mlon1)
+    end if
 
     ! calculate N coefficients - S1,S2
     call calculate_n( &
@@ -371,11 +396,37 @@ contains
     ! initialize high-latitude field aligned currents to zero if high-latitude potential is
     ! externally provided
     if (read_pot) then
-       fac_hl_p = 0._rp
+       fac_hl_loc = 0._rp
+    else
+
+       ! zero out FAC where there is no conductance
+       do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)
+          if (zigP_p(isn,j,i) < thres) fac_hl_p(isn,j,i) = 0._rp
+       enddo
+
+       fac_hl_p = balance_fac_hl( mlatd0,mlatd1,mlond0,mlond1, M3_p(1,:,:,:),fac_hl_p)
+
+       j = 1 ! no external FAC at poles
+       if (j>=mlatd0 .and. j<=mlatd1) then
+          do concurrent (i = mlond0:mlond1, isn = 1:2)
+             fac_hl_p(isn,j,i) = 0._rp
+          enddo
+       endif
+
+       do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)
+          fac_hl_loc(isn,j,i) = fac_hl_p(isn,j,i)*M3_p(1,isn,j,i)
+       enddo
+
     end if
 
     ! construct linear system and solve
-    call linear_system(mlatd0,mlatd1,mlond0,mlond1, bij,pot_hl_p,fac_hl_p,src2d,coef2d,pot_p)
+    call linear_system(mlatd0,mlatd1,mlond0,mlond1, bij,pot_hl_p,fac_hl_loc,src2d,coef2d,pot_p)
+
+    if (read_pot) then ! pot_hl is input, fac_hl is output
+      do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)
+        fac_hl_p(isn,j,i) = fac_hl_loc(isn,j,i)/M3_p(1,isn,j,i)
+      enddo
+    endif
 
     ! calculate electric fields
     call calculate_ed( &
