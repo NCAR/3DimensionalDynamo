@@ -2,9 +2,10 @@ module outputdata_mod
   use iso_fortran_env, only: r8=>real64 ! double precision
   use mpi_module, only: mpi_rank
   use mpi_module, only: mlat0, mlat1, mlon0, mlon1
-  use params_module, only: nhgt_fix, nmlatS2_h, nmlat_T1
+  use params_module, only: nhgt_fix, nmlatS2_h, nmlat_T1, nmlat_T2
   use inputdata_mod, only: nlons1, npflpts1, nlons2, npflpts2
   use inputdata_mod, only: nmaglat, nmaglon
+  use inputdata_mod, only: nmaglat_s, nmaglon_s
 
   use netcdf
 
@@ -267,6 +268,112 @@ contains
     end if
 
   end subroutine outputdata_write_2dp_fld
+
+!~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%
+  subroutine outputdata_write_2ds1_fld( varname, time_ndx, fld )
+    use mpi, only: MPI_INTEGER, MPI_REAL8, MPI_SUCCESS, MPI_SUM, MPI_COMM_WORLD
+
+    character(len=*), intent(in) :: varname
+    integer, intent(in) :: time_ndx
+    real(r8), intent(in) :: fld(2,mlat0:mlat1,mlon0:mlon1)
+
+    real(r8) :: sndbuf(nmaglon_s,nmaglat)
+    real(r8) :: rcvbuf(nmaglon_s,nmaglat)
+
+    integer :: cnt(3)
+    integer :: strt(3)
+    integer :: h,i,j, jj
+    integer :: len, ier, varid
+
+    len = nmaglon_s*nmaglat
+
+    sndbuf = 0._r8
+    rcvbuf = 0._r8
+
+    cnt(1) = nmaglon_s
+    cnt(2) = nmaglat
+    cnt(3) = 1
+
+    strt(1) = 1
+    strt(2) = 1
+    strt(3) = time_ndx
+
+
+    do h = 1,2
+       do i = mlon0,mlon1
+          do j = mlat0,mlat1
+             if (h==2) then
+                jj = nmlat_T1 - j + 1
+             else
+                jj = j
+             end if
+             sndbuf(i,jj) = fld(h,j,i)
+          end do
+       end do
+    end do
+
+    ! Gather to root by using scalable reduce method:
+    call mpi_reduce(sndbuf, rcvbuf, len, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ier )
+
+    if (mpi_rank==0) then
+       call handle_error( nf90_inq_varid(outfid, varname, varid), 'ERROR: nf90_inq_varid '//varname )
+       call handle_error( nf90_put_var(outfid, varid, rcvbuf, start=strt, count=cnt), ' nf90_put_var error ')
+    end if
+
+  end subroutine outputdata_write_2ds1_fld
+
+
+!~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%
+  subroutine outputdata_write_2ds2_fld( varname, time_ndx, fld )
+    use mpi, only: MPI_INTEGER, MPI_REAL8, MPI_SUCCESS, MPI_SUM, MPI_COMM_WORLD
+
+    character(len=*), intent(in) :: varname
+    integer, intent(in) :: time_ndx
+    real(r8), intent(in) :: fld(2,mlat0:mlat1,mlon0:mlon1)
+
+    real(r8) :: sndbuf(nmaglon,nmaglat_s)
+    real(r8) :: rcvbuf(nmaglon,nmaglat_s)
+
+    integer :: cnt(3)
+    integer :: strt(3)
+    integer :: h,i,j, jj
+    integer :: len, ier, varid
+
+    len = nmaglon*nmaglat_s
+
+    sndbuf = 0._r8
+    rcvbuf = 0._r8
+
+    cnt(1) = nmaglon
+    cnt(2) = nmaglat_s
+    cnt(3) = 1
+
+    strt(1) = 1
+    strt(2) = 1
+    strt(3) = time_ndx
+
+    do h = 1,2
+       do i = mlon0,mlon1
+          do j = mlat0,min(mlat1,nmlatS2_h)
+             if (h==2) then
+                jj = nmlat_T2 - j + 1
+             else
+                jj = j
+             end if
+             sndbuf(i,jj) = fld(h,j,i)
+          end do
+       end do
+    end do
+
+    ! Gather to root by using scalable reduce method:
+    call mpi_reduce(sndbuf, rcvbuf, len, MPI_REAL8, MPI_SUM, 0, MPI_COMM_WORLD, ier )
+
+    if (mpi_rank==0) then
+       call handle_error( nf90_inq_varid(outfid, varname, varid), 'ERROR: nf90_inq_varid '//varname )
+       call handle_error( nf90_put_var(outfid, varid, rcvbuf, start=strt, count=cnt), ' nf90_put_var error ')
+    end if
+
+  end subroutine outputdata_write_2ds2_fld
 
 !~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%~%
   subroutine handle_error( ierror, msg )

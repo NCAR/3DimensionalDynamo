@@ -35,6 +35,10 @@ module inputdata_mod
   integer, protected :: sigma_ped_s2_vid = -1
   integer, protected :: hilat_pot_vid = -1
 
+  integer, protected :: edyn3d_nhgt = -huge(1)
+  integer, protected :: edyn3d_nmlat_h = -huge(1)
+  integer, protected :: edyn3d_nmlon = -huge(1)
+
 contains
 
   !---------------------------------------------------------------------
@@ -47,7 +51,7 @@ contains
 
     character(len=*), intent(in) :: filepath
 
-    integer :: status, ndims, did
+    integer :: status, ndims, did, vid
 
     character(len=*), parameter :: prefix = 'inputdata_init: '
     character(len=32) :: dim_name
@@ -80,6 +84,15 @@ contains
     call handle_error( nf90_inq_varid(ncid, 'sigma_ped_s1', sigma_ped_s1_vid), 'ERROR: nf90_inq_varid sigma_ped_s1' )
     call handle_error( nf90_inq_varid(ncid, 'sigma_ped_s2', sigma_ped_s2_vid), 'ERROR: nf90_inq_varid sigma_ped_s2' )
     call handle_error( nf90_inq_varid(ncid, 'HILAT_POT', hilat_pot_vid), 'ERROR: nf90_inq_varid sigma_ped_s2' )
+
+    call handle_error( nf90_inq_varid(ncid, 'edyn3d_nhgt', vid), 'ERROR: nf90_inq_varid edyn3d_nhgt' )
+    call handle_error( nf90_get_var(ncid, vid, edyn3d_nhgt), ' nf90_get_var error edyn3d_nhgt')
+
+    call handle_error( nf90_inq_varid(ncid, 'edyn3d_nmlat_h', vid), 'ERROR: nf90_inq_varid edyn3d_nmlat_h' )
+    call handle_error( nf90_get_var(ncid, vid, edyn3d_nmlat_h), ' nf90_get_var error edyn3d_nmlat_h')
+
+    call handle_error( nf90_inq_varid(ncid, 'edyn3d_nmlon', vid), 'ERROR: nf90_inq_varid edyn3d_nmlon' )
+    call handle_error( nf90_get_var(ncid, vid, edyn3d_nmlon), ' nf90_get_var error edyn3d_nmlon')
 
   contains
 

@@ -7,7 +7,7 @@ program main
   use inputdata_mod, only: inputdata_read_s1_fld, inputdata_read_s2_fld, inputdata_read_2dp_fld
   use inputdata_mod, only: un_s1_vid, un_s2_vid, vn_s1_vid, vn_s2_vid
   use inputdata_mod, only: sigma_hal_s1_vid, sigma_hal_s2_vid, sigma_ped_s1_vid, sigma_ped_s2_vid
-  use inputdata_mod, only: hilat_pot_vid
+  use inputdata_mod, only: hilat_pot_vid, edyn3d_nmlat_h, edyn3d_nmlon, edyn3d_nhgt
   use mpi_module, only: mpi_rank, mpi_size, lat_size, lon_size
   use params_module,only: nmlat_h, nmlon, nhgt_fix, hgt_fix_r
   use indices_mod, only : indices_init
@@ -18,25 +18,15 @@ program main
   use outputdata_mod, only: outputdata_write_s1_fld
   use outputdata_mod, only: outputdata_write_s2_fld
   use outputdata_mod, only: outputdata_write_2dp_fld
+  use outputdata_mod, only: outputdata_write_2ds1_fld
+  use outputdata_mod, only: outputdata_write_2ds2_fld
 
   implicit none
 
   include 'mpif.h'
 
-  !integer, parameter :: edyn3d_nmlon = 180
-  !integer, parameter :: edyn3d_nhgt = 54
-  !integer, parameter :: edyn3d_nmlat_h = 91
-
-  integer, parameter :: edyn3d_nmlat_h = 45
-  integer, parameter :: edyn3d_nmlon = 60
-  integer, parameter :: edyn3d_nhgt = 26
-
-! ionos_edyn3d_nmlat_h = 45
-! ionos_edyn3d_nmlon = 60
-! ionos_edyn3d_nhgt = 26
-
-!  integer, parameter :: nglats = 90
-!  integer, parameter :: nglons = 180
+  character(len=*), parameter :: infilepath = '../data/FX2000_f19_wcmx_3Dedyn_test01.cam.h2i.0001-01-01-07200.nc'
+!  character(len=*), parameter :: infilepath = '../data/FX2000_ne16pg3_wcmx_3Dedyn_test04.cam.h2i.0001-01-01-00000.nc'
 
   real(r8), parameter :: geomag_year = 2000.50
 
@@ -88,6 +78,8 @@ program main
 
   print*,' my rank : ',my_rank,' of ',job_size
 
+  call inputdata_init(infilepath)
+
   write(*,*) prefix,'call dynamo_init1 ...'
   ! before apex init
   call dynamo_init1( &
@@ -112,12 +104,7 @@ program main
   ! after apex init
   call dynamo_init2()
 
-  write(*,*) prefix,'call inputdata_read ...'
-  !call inputdata_init('../data/FX2000_ne16pg3_wcmx_3Dedyn_test02.cam.h5i.0001-01-01-00000.nc')
-  !call outputdata_init('../data/FX2000_ne16pg3_wcmx_3Dedyn_test02.cam.h5i.0001-01-01-00000.nc','testout.nc')
-
-  call inputdata_init('../data/FX2000_ne16pg3_wcmx_3Dedyn_test04.cam.h2i.0001-01-01-00000.nc')
-  call outputdata_init('../data/FX2000_ne16pg3_wcmx_3Dedyn_test04.cam.h2i.0001-01-01-00000.nc','testout.nc')
+  call outputdata_init(infilepath, 'testout.nc')
 
   call indices_init(npflpts1,npflpts2)
 
@@ -215,18 +202,15 @@ program main
      call outputdata_write_s1_fld('IonW_s1', itime, wi_s1)
      call outputdata_write_s2_fld('IonW_s2', itime, wi_s2)
 
-   !  call outputdata_write_2dp_fld('ED1s1',itime, efld1_s1)
+     call outputdata_write_2ds1_fld('ED1s1', itime, efld1_s1)
+     call outputdata_write_2ds1_fld('ED2s1', itime, efld2_s1)
+     call outputdata_write_2ds2_fld('ED1s2', itime, efld1_s2)
+     call outputdata_write_2ds2_fld('ED2s2', itime, efld2_s2)
 
-     !efld1_s1 = 1._r8
-    ! call outputdata_write_s1_fld('ED1s1', itime, efld1_s1)
-    ! call outputdata_write_s1_fld('ED2s1', itime, efld2_s1)
-    ! call outputdata_write_s2_fld('ED1s2', itime, efld1_s2)
-    ! call outputdata_write_s2_fld('ED2s2', itime, efld2_s2)
-
-    ! call outputdata_write_s1_fld('Ve1s1', itime, ionvel1_s1)
-    ! call outputdata_write_s1_fld('Ve2s1', itime, ionvel2_s1)
-    ! call outputdata_write_s2_fld('Ve1s2', itime, ionvel1_s2)
-    ! call outputdata_write_s2_fld('Ve2s2', itime, ionvel2_s2)
+     call outputdata_write_2ds1_fld('Ve1s1', itime, ionvel1_s1)
+     call outputdata_write_2ds1_fld('Ve2s1', itime, ionvel2_s1)
+     call outputdata_write_2ds2_fld('Ve1s2', itime, ionvel1_s2)
+     call outputdata_write_2ds2_fld('Ve2s2', itime, ionvel2_s2)
 
   end do
 
