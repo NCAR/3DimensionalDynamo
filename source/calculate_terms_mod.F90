@@ -1,4 +1,4 @@
-module calculate_terms_module
+module calculate_terms_mod
 
   use prec,only:rp
 
@@ -11,8 +11,8 @@ module calculate_terms_module
     npts_p,vmp_p,bmag_p,sigP_p,zigP_p)
 ! calculate field-line integrated conductance
 
-    use params_module,only:nhgt_fix,nmlat_h
-    use cons_module,only:fill_value
+    use params_mod,only:nhgt_fix,nmlat_h
+    use cons_mod,only:fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_p
@@ -43,8 +43,8 @@ module calculate_terms_module
     D_s2,M2_s2,d1d2_s2,d2d2_s2,sigP_s2,sigH_s2, &
     N1p_s1,N1h_s1,N2p_s2,N2h_s2)
 
-    use params_module,only:nhgt_fix,nmlat_h,nmlatS2_h,ylonm,rho,rho_s
-    use cons_module,only:r0,fill_value
+    use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h,ylonm,rho,rho_s
+    use cons_mod,only:r0,fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_s1
@@ -129,8 +129,8 @@ module calculate_terms_module
     d1_s1,d2_s1,d1_s2,d2_s2,Je1D_s1,Je2D_s2)
 ! calculate wind driven currents
 
-    use params_module,only:nhgt_fix,nmlat_h,nmlatS2_h
-    use cons_module,only:J3LB,fill_value
+    use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
+    use cons_mod,only:J3LB,fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_s1
@@ -225,8 +225,8 @@ module calculate_terms_module
 ! and needs to be corrected (direct FAC input may be unbalanced)
 ! M3_p is only the bottom level
 
-    use params_module,only:nmlat_h
-    use mpi_module,only:reduce_sum_1d
+    use params_mod,only:nmlat_h
+    use mpi_mod,only:reduce_sum_1d
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: &
@@ -292,8 +292,8 @@ module calculate_terms_module
 ! and needs to be corrected (direct FAC input may be unbalanced)
 ! M3_p is only the bottom level
 
-    use params_module,only:nmlat_h
-    use mpi_module,only:reduce_sum_1d
+    use params_mod,only:nmlat_h
+    use mpi_mod,only:reduce_sum_1d
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: &
@@ -355,8 +355,8 @@ module calculate_terms_module
     pot_p,ed1_s1,ed2_s1,ed1_s2,ed2_s2)
 ! calculates electric field Ed1, Ed2 at S1 and S2 points
 
-    use params_module,only:nmlat_h,nmlatS2_h,ylonm,rho,rho_s
-    use cons_module,only:r0,fill_value
+    use params_mod,only:nmlat_h,nmlatS2_h,ylonm,rho,rho_s
+    use cons_mod,only:r0,fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: pot_p
@@ -409,8 +409,8 @@ module calculate_terms_module
 ! ve2 = -Ed1/Be3
 ! be3 is only the bottom level
 
-    use params_module,only:nmlat_h,nmlatS2_h
-    use cons_module,only:fill_value
+    use params_mod,only:nmlat_h,nmlatS2_h
+    use cons_mod,only:fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: &
@@ -449,8 +449,8 @@ module calculate_terms_module
     ex_s1,ey_s1,ez_s1,ex_s2,ey_s2,ez_s2)
 ! get electric fields in geographic coordinates (Ed1,2 -> Ex,y,z)
 
-    use params_module,only:nhgt_fix,nmlat_h,nmlatS2_h
-    use cons_module,only:fill_value
+    use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
+    use cons_mod,only:fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_s1
@@ -513,8 +513,8 @@ module calculate_terms_module
     vx_s1,vy_s1,vz_s1,vx_s2,vy_s2,vz_s2)
 ! get drift velocities in geographic coordinates (Ve1,2 -> Vx,y,z)
 
-    use params_module,only:nhgt_fix,nmlat_h,nmlatS2_h
-    use cons_module,only:fill_value
+    use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
+    use cons_mod,only:fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_s1
@@ -577,9 +577,9 @@ module calculate_terms_module
     M2_s2,N2p_s2,N2h_s2,Je2D_s2, &
     M3_r,I1_s1,I2_s2,I3_r)
 
-    use params_module,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h,nmlon
-    use cons_module,only:J3LB,fill_value
-    use mpi_module,only:gather_mlon_3d,sync_mlat_5d,sync_mlon_5d
+    use params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h,nmlon
+    use cons_mod,only:J3LB,fill_value
+    use mpi_mod,only:gather_mlon_3d,sync_mlat_5d,sync_mlon_5d
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_s1,npts_r
@@ -687,4 +687,4 @@ module calculate_terms_module
 
   endsubroutine calculate_current
 !-----------------------------------------------------------------------
-endmodule calculate_terms_module
+endmodule calculate_terms_mod

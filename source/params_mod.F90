@@ -1,4 +1,4 @@
-module params_module
+module params_mod
 ! grid parameters (geo/mag)
 
   use prec, only: rp
@@ -34,4 +34,4 @@ module params_module
     read_pot = .false., & ! whether potential is used at high latitude
     read_fac = .false.
 
-end module params_module
+end module params_mod

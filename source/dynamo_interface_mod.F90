@@ -7,36 +7,36 @@ module dynamo_interface_mod
 
   use prec, only: rp
 
-  use mpi_module, only: mlat0, mlat1, mlon0, mlon1 ! local mag field dims
-  use mpi_module, only: mlond0, mlond1, mlatd0, mlatd1 ! for ghost pnts
-  use mpi_module, only: sync_mlat_5d, sync_mlon_5d
+  use mpi_mod, only: mlat0, mlat1, mlon0, mlon1 ! local mag field dims
+  use mpi_mod, only: mlond0, mlond1, mlatd0, mlatd1 ! for ghost pnts
+  use mpi_mod, only: sync_mlat_5d, sync_mlon_5d
 
-  use params_module, only: read_pot, read_fac
-  use params_module, only: nmlat_h, nmlatS2_h, nmlon, nhgt_fix, nhgt_fix_r
+  use params_mod, only: read_pot, read_fac
+  use params_mod, only: nmlat_h, nmlatS2_h, nmlon, nhgt_fix, nhgt_fix_r
 
-  use mpi_module, only: mpi_init => init, setup_topology
-  use mpi_module, only: mpi_rank, mpi_size
+  use mpi_mod, only: mpi_init => init, setup_topology
+  use mpi_mod, only: mpi_rank, mpi_size
 
-  use grid_module, only: generate_mag_grid
+  use grid_mod, only: generate_mag_grid
 
-  use init_module, only: init_cons, init_fieldline
-  use init_module, only: get_apex, calculate_m
+  use init_mod, only: init_cons, init_fieldline
+  use init_mod, only: get_apex, calculate_m
 
-  use alloc_module, only: alloc_fieldline, dealloc_fieldline
+  use alloc_mod, only: alloc_fieldline, dealloc_fieldline
 
-  use fieldline_module, only: F_p,F_s1,F_s2,F_r,M3_p,M1_s1,M2_s2,M3_r
-  use fieldline_module, only: be3_s1,be3_s2,bmag_p,vmp_p,D1_s1,D1_s2,d1d1_s1,d1d2_s1,d1d2_s2
-  use fieldline_module, only: d2_s1,d2_s2,d2d2_s1,d2d2_s2,d_s1,d_s2,e1_s1,e1_s2,e2_s1,e2_s2
+  use fieldline_mod, only: F_p,F_s1,F_s2,F_r,M3_p,M1_s1,M2_s2,M3_r
+  use fieldline_mod, only: be3_s1,be3_s2,bmag_p,vmp_p,D1_s1,D1_s2,d1d1_s1,d1d2_s1,d1d2_s2
+  use fieldline_mod, only: d2_s1,d2_s2,d2d2_s1,d2d2_s2,d_s1,d_s2,e1_s1,e1_s2,e2_s1,e2_s2
 
-  use calculate_terms_module, only: calculate_n, calculate_je
-  use calculate_terms_module, only: calculate_ed, calculate_ve, calculate_vxyz
-  use calculate_terms_module, only: calculate_conductance, balance_fac_hl
+  use calculate_terms_mod, only: calculate_n, calculate_je
+  use calculate_terms_mod, only: calculate_ed, calculate_ve, calculate_vxyz
+  use calculate_terms_mod, only: calculate_conductance, balance_fac_hl
 
-  use stencil_module, only: calculate_coef2d, calculate_coef3d
-  use stencil_module, only: calculate_bij
-  use stencil_module, only: calculate_src3d,calculate_src2d
+  use stencil_mod, only: calculate_coef2d, calculate_coef3d
+  use stencil_mod, only: calculate_bij
+  use stencil_mod, only: calculate_src3d,calculate_src2d
 
-  use solver_module, only: linear_system
+  use solver_mod, only: linear_system
 
   implicit none
 

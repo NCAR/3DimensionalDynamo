@@ -1,4 +1,4 @@
-module util_module
+module util_mod
 
   use prec,only:rp
 
@@ -185,4 +185,4 @@ module util_module
 
   endfunction find
 !-----------------------------------------------------------------------
-endmodule util_module
+endmodule util_mod

@@ -1,4 +1,4 @@
-module cons_module
+module cons_mod
 
   use prec, only: rp, sp
 
@@ -20,4 +20,4 @@ module cons_module
 ! lower boundary condition Je2LB is defined by lower atmosphere model
   real(kind=rp),dimension(:,:,:),allocatable :: J3LB ! R current [A/m2]
 
-endmodule cons_module
+endmodule cons_mod

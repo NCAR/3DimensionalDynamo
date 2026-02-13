@@ -1,4 +1,4 @@
-module fieldline_module
+module fieldline_mod
 
   use prec,only:rp
 
@@ -53,4 +53,4 @@ module fieldline_module
        e2_s2=>null(), &
        e3_s2=>null()
 
-endmodule fieldline_module
+endmodule fieldline_mod

@@ -8,11 +8,11 @@ program main
   use inputdata_mod, only: un_s1_vid, un_s2_vid, vn_s1_vid, vn_s2_vid
   use inputdata_mod, only: sigma_hal_s1_vid, sigma_hal_s2_vid, sigma_ped_s1_vid, sigma_ped_s2_vid
   use inputdata_mod, only: hilat_pot_vid, edyn3d_nmlat_h, edyn3d_nmlon, edyn3d_nhgt
-  use mpi_module, only: mpi_rank, mpi_size, lat_size, lon_size
-  use params_module,only: nmlat_h, nmlon, nhgt_fix, hgt_fix_r
+  use mpi_mod, only: mpi_rank, mpi_size, lat_size, lon_size
+  use params_mod,only: nmlat_h, nmlon, nhgt_fix, hgt_fix_r
   use indices_mod, only : indices_init
-  use mpi_module, only: mlat0, mlat1, mlon0, mlon1
-  use mpi_module, only: mlond0, mlond1, mlatd0, mlatd1
+  use mpi_mod, only: mlat0, mlat1, mlon0, mlon1
+  use mpi_mod, only: mlond0, mlond1, mlatd0, mlatd1
 
   use outputdata_mod, only: outputdata_init, outputdata_close
   use outputdata_mod, only: outputdata_write_s1_fld
