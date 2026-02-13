@@ -19,7 +19,7 @@ contains
 
   subroutine indices_init( nflpts_s1, nflpts_s2 )
 
-    use params_module, only: nmlat_h, nmlatS2_h, nhgt_fix
+    use params_mod, only: nmlat_h, nmlatS2_h, nhgt_fix
     use dynamo_interface_mod, only: npts_s1, npts_s2
 
     integer, intent(in) :: nflpts_s1, nflpts_s2

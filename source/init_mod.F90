@@ -1,4 +1,4 @@
-module init_module
+module init_mod
 
   use prec,only:rp
 
@@ -9,9 +9,9 @@ module init_module
   subroutine init_cons
 ! Set derived constants
 
-    use params_module,only:nmlat_h,nmlon,ylatm
-    use cons_module,only:ylatm_JT,jlatm_JT,J3LB
-    use solver_module,only:nlonlat
+    use params_mod,only:nmlat_h,nmlon,ylatm
+    use cons_mod,only:ylatm_JT,jlatm_JT,J3LB
+    use solver_mod,only:nlonlat
 
     integer,dimension(1) :: idx
 
@@ -33,11 +33,11 @@ module init_module
     jmax_p,jmax_s1,jmax_s2,jmax_r,size_p,size_s1,size_s2,size_r, &
     qdlat_p,qdlat_s1,qdlat_s2,qdlat_r)
 
-    use params_module,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
+    use params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
       hgt_fix,hgt_fix_r,ha,ha_s,ylatm,ylatm_s
-    use cons_module,only:re,r0,fill_value
-    use util_module,only:find
-    use util_module,only:lamqd_from_apex_coord
+    use cons_mod,only:re,r0,fill_value
+    use util_mod,only:find
+    use util_mod,only:lamqd_from_apex_coord
 
     integer,dimension(nmlat_h),intent(out) :: npts_p,npts_s1,npts_r
     integer,dimension(nmlatS2_h),intent(out) :: npts_s2
@@ -133,13 +133,13 @@ module init_module
        qdlat_p,qdlat_s1,qdlat_s2,qdlat_r, &
        glat_p, glon_p, glat_s1, glon_s1, glat_s2, glon_s2, glat_r, glon_r )
 
-    use params_module,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
+    use params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
       hgt_fix,hgt_fix_r,ha,ha_s,ylatm,ylatm_s
-    use params_module,only:ylonm,ylonm_s
-    use cons_module,only:h0,rtd
-    use fieldline_module
+    use params_mod,only:ylonm,ylonm_s
+    use cons_mod,only:h0,rtd
+    use fieldline_mod
     use apex,only: apex_mall,apex_q2g
-    use mpi_module,only:mlond0,mlond1,mlatd0,mlatd1
+    use mpi_mod,only:mlond0,mlond1,mlatd0,mlatd1
 
     integer,dimension(nmlat_h),intent(in) :: npts_p,npts_s1,npts_r
     integer,dimension(nmlatS2_h),intent(in) :: npts_s2
@@ -303,8 +303,8 @@ module init_module
   pure subroutine calculate_a(a1,a3)
 ! a1,a3 vary from 0 at the magnetic pole to 1 at the magnetic equator
 
-    use params_module,only:nhgt_fix,nhgt_fix_r,nmlat_h,rho_s,hgt_fix_r
-    use cons_module,only:pi,re,r0
+    use params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,rho_s,hgt_fix_r
+    use cons_mod,only:pi,re,r0
 
     real(kind=rp),dimension(nhgt_fix  ,nmlat_h+1),intent(out) :: a1
     real(kind=rp),dimension(nhgt_fix_r,nmlat_h+1),intent(out) :: a3
@@ -369,10 +369,10 @@ module init_module
     F_p,F_s1,F_s2,F_r,M3_p,M1_s1,M2_s2,M3_r)
 ! calculate integrated areas for each surface of a volume (Chapter 5)
 
-    use params_module,only:nhgt_fix,nhgt_fix_r, &
+    use params_mod,only:nhgt_fix,nhgt_fix_r, &
       nmlat_h,nmlatS2_h,ylonm,rho_s,hgt_fix,hgt_fix_r
-    use cons_module,only:re,r0,fill_value
-    use mpi_module,only:mlond0,mlond1,mlatd0,mlatd1
+    use cons_mod,only:re,r0,fill_value
+    use mpi_mod,only:mlond0,mlond1,mlatd0,mlatd1
 
     integer,dimension(nmlat_h),intent(in) :: npts_p,npts_s1,npts_r
     integer,dimension(nmlatS2_h),intent(in) :: npts_s2
@@ -473,4 +473,4 @@ module init_module
 
   endsubroutine calculate_m
 !-----------------------------------------------------------------------
-endmodule init_module
+endmodule init_mod

@@ -1,4 +1,4 @@
-module solver_module
+module solver_mod
 
   use prec,only:rp
 
@@ -29,9 +29,9 @@ module solver_module
 ! if potential is read in, pot_hl is used, fac_hl is output
 ! if FAC is read in, pot_hl is not used, only fac_hl is used
 
-    use params_module,only:nmlat_h,nmlon
-    use params_module,only:read_pot,read_fac
-    use mpi_module,only:gather_mag,bcast,mpi_rank
+    use params_mod,only:nmlat_h,nmlon
+    use params_mod,only:read_pot,read_fac
+    use mpi_mod,only:gather_mag,bcast,mpi_rank
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(mlatd0:mlatd1,mlond0:mlond1),intent(in) :: bij
@@ -168,8 +168,8 @@ module solver_module
 
 ! this is not a 9-point stencil
 
-    use params_module,only:nmlat_h,nmlon
-    use cons_module,only:jlatm_JT
+    use params_mod,only:nmlat_h,nmlon
+    use cons_mod,only:jlatm_JT
 
     real(kind=rp),dimension(nmlat_h,nmlon),intent(in) :: bij
     real(kind=rp),dimension(9,2,nmlat_h,nmlon),intent(in) :: coef
@@ -714,8 +714,8 @@ module solver_module
 ! construct vector RHS
 ! this is different from ravel
 
-    use params_module,only:nmlat_h,nmlon
-    use cons_module,only:jlatm_JT
+    use params_mod,only:nmlat_h,nmlon
+    use cons_mod,only:jlatm_JT
 
     real(kind=rp),dimension(2,nmlat_h,nmlon),intent(in) :: src
     real(kind=rp),dimension(nmlon),intent(in) :: coef678
@@ -782,8 +782,8 @@ module solver_module
 ! isn,j,i need to satisfy 1<=isn<=2, 1<=j<=nmlat_h, 1<=i<=nmlon
 ! but those conditions are not enforced
 
-    use params_module,only:nmlat_h,nmlon
-    use cons_module,only:jlatm_JT
+    use params_mod,only:nmlat_h,nmlon
+    use cons_mod,only:jlatm_JT
 
     integer,intent(in) :: isn,j,i
     integer :: ij
@@ -813,8 +813,8 @@ module solver_module
 ! ij needs to be within [1, nlonlat]
 ! but it is not enforced
 
-    use params_module,only:nmlat_h,nmlon
-    use cons_module,only:jlatm_JT
+    use params_mod,only:nmlat_h,nmlon
+    use cons_mod,only:jlatm_JT
 
     integer,intent(in) :: ij
     integer,intent(out) :: isn,j,i
@@ -847,8 +847,8 @@ module solver_module
 ! reorder 2D fields (lat-lon) into 1D vector (RHS)
 ! this is the inverse of unravel (except for the north pole)
 
-    use params_module,only:nmlat_h,nmlon
-    use cons_module,only:jlatm_JT
+    use params_mod,only:nmlat_h,nmlon
+    use cons_mod,only:jlatm_JT
 
     real(kind=rp),dimension(2,nmlat_h,nmlon),intent(in) :: fin
     real(kind=rp),dimension(nlonlat) :: fout
@@ -889,8 +889,8 @@ module solver_module
 ! reorder 1D vector (RHS) into 2D fields (lat-lon)
 ! this is the inverse of ravel (except for the north pole)
 
-    use params_module,only:nmlat_h,nmlon
-    use cons_module,only:jlatm_JT
+    use params_mod,only:nmlat_h,nmlon
+    use cons_mod,only:jlatm_JT
 
     real(kind=rp),dimension(nlonlat),intent(in) :: fin
     real(kind=rp),dimension(2,nmlat_h,nmlon) :: fout
@@ -1089,4 +1089,4 @@ module solver_module
 
   endfunction solve_superlu
 !-----------------------------------------------------------------------
-endmodule solver_module
+endmodule solver_mod

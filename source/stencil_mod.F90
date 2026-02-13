@@ -1,4 +1,4 @@
-module stencil_module
+module stencil_mod
 
   use prec,only:rp
 
@@ -16,7 +16,7 @@ module stencil_module
     npts_p,npts_s2,N1p_s1,N1h_s1,N2p_s2,N2h_s2) result(coef3d)
 ! calculate height-dependent matrix coefficients
 
-    use params_module,only:nhgt_fix,nmlat_h,nmlatS2_h
+    use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_p
@@ -105,7 +105,7 @@ module stencil_module
   pure function calculate_coef2d(mlatd0,mlatd1,mlond0,mlond1,coef3d) result(coef2d)
 ! add the coefficients in height to get the coefficients for each hemisphere
 
-    use params_module,only:nhgt_fix
+    use params_mod,only:nhgt_fix
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(9,nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: coef3d
@@ -133,8 +133,8 @@ module stencil_module
 
 ! M3_r is only the bottom level
 
-    use params_module,only:nhgt_fix,nmlat_h,nmlatS2_h
-    use cons_module,only:J3LB
+    use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
+    use cons_mod,only:J3LB
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_p
@@ -190,7 +190,7 @@ module stencil_module
   pure function calculate_src2d(mlatd0,mlatd1,mlond0,mlond1,src3d) result(src2d)
 ! add the source in height to get the source for each hemisphere
 
-    use params_module,only:nhgt_fix
+    use params_mod,only:nhgt_fix
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: src3d
@@ -212,8 +212,8 @@ module stencil_module
   pure function calculate_bij(mlatd0,mlatd1,mlond0,mlond1,coef2d) result(bij)
 ! set field-aligned conductance (b) matrix
 
-    use params_module,only:rho,rho_s
-    use cons_module,only:dtr,jlatm_JT
+    use params_mod,only:rho,rho_s
+    use cons_mod,only:dtr,jlatm_JT
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(9,2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: coef2d
@@ -263,4 +263,4 @@ module stencil_module
 
   endfunction calculate_bij
 !-----------------------------------------------------------------------
-endmodule stencil_module
+endmodule stencil_mod

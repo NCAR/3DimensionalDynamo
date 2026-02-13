@@ -1,4 +1,4 @@
-module mpi_module
+module mpi_mod
 
   use prec, only: rp
   use MPI
@@ -632,4 +632,4 @@ module mpi_module
 
   endfunction generate_minvar_list
 !-----------------------------------------------------------------------
-endmodule mpi_module
+endmodule mpi_mod
