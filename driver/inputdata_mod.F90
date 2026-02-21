@@ -1,13 +1,13 @@
 module inputdata_mod
   use iso_fortran_env, only: r8=>real64 ! double precision
 
-  use mpi_mod, only: mpi_rank
+  use mpi_mod, only: mpi_rank=>mag_rank
 
   use netcdf, only: NF90_NOWRITE, NF90_NOERR, nf90_open, nf90_inquire
   use netcdf, only: nf90_inquire_dimension, nf90_inq_dimid
   use netcdf, only: nf90_close, nf90_inq_varid, nf90_get_var
-  use mpi_mod, only: mlat0, mlat1, mlon0, mlon1
-  use mpi_mod, only: mlond0, mlond1, mlatd0, mlatd1
+  use mpi_mod, only: mlat0=>mag_lat0, mlat1=>mag_lat1, mlon0=>mag_lon0, mlon1=>mag_lon1 ! local mag field dims
+  use mpi_mod, only: mlond0=>mag_lond0,mlond1=>mag_lond1,mlatd0=>mag_latd0,mlatd1=>mag_latd1
   use params_mod, only: nhgt_fix, nmlat_T1, nmlatS2_h
   use params_mod, only: nmlat_h,  nmlon
 

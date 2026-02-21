@@ -1,7 +1,7 @@
 module outputdata_mod
   use iso_fortran_env, only: r8=>real64 ! double precision
-  use mpi_mod, only: mpi_rank
-  use mpi_mod, only: mlat0, mlat1, mlon0, mlon1
+  use mpi_mod, only: mpi_rank=>mag_rank
+  use mpi_mod, only: mlat0=>mag_lat0, mlat1=>mag_lat1, mlon0=>mag_lon0, mlon1=>mag_lon1 ! local mag field dims
   use params_mod, only: nhgt_fix, nmlatS2_h, nmlat_T1, nmlat_T2
   use inputdata_mod, only: nlons1, npflpts1, nlons2, npflpts2
   use inputdata_mod, only: nmaglat, nmaglon

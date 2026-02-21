@@ -31,7 +31,7 @@ module solver_mod
 
     use params_mod,only:nmlat_h,nmlon
     use params_mod,only:read_pot,read_fac
-    use mpi_mod,only:gather_mag,bcast,mpi_rank
+    use mpi_mod,only:gather_mag,bcast=>bcast_3d,mpi_rank=>mag_rank
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(mlatd0:mlatd1,mlond0:mlond1),intent(in) :: bij

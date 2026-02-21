@@ -579,7 +579,7 @@ module calculate_terms_mod
 
     use params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h,nmlon
     use cons_mod,only:J3LB,fill_value
-    use mpi_mod,only:gather_mlon_3d,sync_mlat_5d,sync_mlon_5d
+    use mpi_mod,only:gather_mlon_3d=>gather_mag_lon_3d,sync_mlat_5d=>sync_mag_lat_5d,sync_mlon_5d=>sync_mag_lon_5d
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_s1,npts_r

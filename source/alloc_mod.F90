@@ -1,7 +1,7 @@
 module alloc_mod
   use prec, only: rp
   use params_mod, only: nmlat_h, nmlatS2_h, nhgt_fix, nhgt_fix_r
-  use mpi_mod, only: mlond0,mlond1,mlatd0,mlatd1
+  use mpi_mod, only: mlond0=>mag_lond0,mlond1=>mag_lond1,mlatd0=>mag_latd0,mlatd1=>mag_latd1
   use fieldline_mod
 
   implicit none

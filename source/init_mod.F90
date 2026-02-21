@@ -139,7 +139,7 @@ module init_mod
     use cons_mod,only:h0,rtd
     use fieldline_mod
     use apex,only: apex_mall,apex_q2g
-    use mpi_mod,only:mlond0,mlond1,mlatd0,mlatd1
+    use mpi_mod, only: mlond0=>mag_lond0,mlond1=>mag_lond1,mlatd0=>mag_latd0,mlatd1=>mag_latd1
 
     integer,dimension(nmlat_h),intent(in) :: npts_p,npts_s1,npts_r
     integer,dimension(nmlatS2_h),intent(in) :: npts_s2
@@ -372,7 +372,7 @@ module init_mod
     use params_mod,only:nhgt_fix,nhgt_fix_r, &
       nmlat_h,nmlatS2_h,ylonm,rho_s,hgt_fix,hgt_fix_r
     use cons_mod,only:re,r0,fill_value
-    use mpi_mod,only:mlond0,mlond1,mlatd0,mlatd1
+    use mpi_mod, only: mlond0=>mag_lond0,mlond1=>mag_lond1,mlatd0=>mag_latd0,mlatd1=>mag_latd1
 
     integer,dimension(nmlat_h),intent(in) :: npts_p,npts_s1,npts_r
     integer,dimension(nmlatS2_h),intent(in) :: npts_s2

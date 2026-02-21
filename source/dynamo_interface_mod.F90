@@ -7,15 +7,15 @@ module dynamo_interface_mod
 
   use prec, only: rp
 
-  use mpi_mod, only: mlat0, mlat1, mlon0, mlon1 ! local mag field dims
-  use mpi_mod, only: mlond0, mlond1, mlatd0, mlatd1 ! for ghost pnts
-  use mpi_mod, only: sync_mlat_5d, sync_mlon_5d
+  use mpi_mod, only: mlat0=>mag_lat0, mlat1=>mag_lat1, mlon0=>mag_lon0, mlon1=>mag_lon1 ! local mag field dims
+  use mpi_mod, only: mlond0=>mag_lond0,mlond1=>mag_lond1,mlatd0=>mag_latd0,mlatd1=>mag_latd1
+  use mpi_mod, only: sync_mlat_5d=>sync_mag_lat_5d, sync_mlon_5d=>sync_mag_lon_5d
 
   use params_mod, only: read_pot, read_fac
   use params_mod, only: nmlat_h, nmlatS2_h, nmlon, nhgt_fix, nhgt_fix_r
 
-  use mpi_mod, only: mpi_init => init, setup_topology
-  use mpi_mod, only: mpi_rank, mpi_size
+  use mpi_mod, only: mpi_init => setup_comm, setup_topology=>setup_mag_topology
+  use mpi_mod, only: mpi_rank=>mag_rank, mpi_size=>mag_size
 
   use grid_mod, only: generate_mag_grid
 
@@ -37,6 +37,7 @@ module dynamo_interface_mod
   use stencil_mod, only: calculate_src3d,calculate_src2d
 
   use solver_mod, only: linear_system
+  use cons_mod, only: J3LB
 
   implicit none
 
@@ -381,7 +382,7 @@ contains
 
     ! calculate wind driven ionospheric current sources
     src3d = calculate_src3d(mlatd0,mlatd1,mlond0,mlond1, &
-         npts_p,npts_s2,M1_s1,Je1D_s1,M2_s2,Je2D_s2,M3_r(1,:,:,:))
+         npts_p,npts_s2,J3LB,M1_s1,Je1D_s1,M2_s2,Je2D_s2,M3_r(1,:,:,:))
 
     ! add the source in height to get the source for each hemisphere
     src2d = calculate_src2d(mlatd0,mlatd1,mlond0,mlond1,src3d)
@@ -421,6 +422,9 @@ contains
 
     ! construct linear system and solve
     call linear_system(mlatd0,mlatd1,mlond0,mlond1, bij,pot_hl_p,fac_hl_loc,src2d,coef2d,pot_p)
+
+  !  call linear_system(mlatd0,mlatd1,mlond0,mlond1, read_pot, read_fac, &
+  !                     bij,pot_hl_p,fac_hl_loc,src2d,coef2d,pot_p)
 
     if (read_pot) then ! pot_hl is input, fac_hl is output
       do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)

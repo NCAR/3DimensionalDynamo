@@ -36,7 +36,7 @@ module stencil_mod
     coef3d = 0
 
     do concurrent (i = mlon0:mlon1, j = mlat0:mlat1, isn = 1:2)
-      do concurrent (k = 1:npts_p(j))
+      do k = 1,npts_p(j)
         N2p_p = 0
         N2h_p = 0
         N2h_pp = 0
@@ -62,6 +62,7 @@ module stencil_mod
 
 ! Equation (6.51)
           coef3d(3,k,isn,j,i) = N2p_p-N2h_pp+N2h_pm
+          coef3d(7,k,isn,j,i) = N2p_p-N2h_pp+N2h_pm
 
 ! Equation (6.52)
           coef3d(9,k,isn,j,i) = -N2p_p
@@ -118,6 +119,8 @@ module stencil_mod
     mlon0 = mlond0+1
     mlon1 = mlond1-1
 
+    coef2d = 0
+
 ! include poles altogether (north pole is not used)
 ! only ic=3,9 are actually used in south pole, all other coefficients are zero
 ! coef3d is zero above the topmost level at low latitudes (no contribution to summation)
@@ -128,17 +131,17 @@ module stencil_mod
   endfunction calculate_coef2d
 !-----------------------------------------------------------------------
   pure function calculate_src3d(mlatd0,mlatd1,mlond0,mlond1, &
-    npts_p,npts_s2,M1_s1,Je1D_s1,M2_s2,Je2D_s2,M3_r) result(src3d)
+    npts_p,npts_s2,J3LB,M1_s1,Je1D_s1,M2_s2,Je2D_s2,M3_r) result(src3d)
 ! calculate wind driven ionospheric current sources
 
 ! M3_r is only the bottom level
 
     use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
-    use cons_mod,only:J3LB
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_p
     integer,dimension(nmlatS2_h),intent(in) :: npts_s2
+    real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: J3LB
     real(kind=rp),dimension(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: &
       M1_s1,Je1D_s1,M2_s2,Je2D_s2
     real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: M3_r
@@ -155,7 +158,7 @@ module stencil_mod
     src3d = 0
 
     do concurrent (i = mlon0:mlon1, j = mlat0:mlat1, isn = 1:2)
-      do concurrent (k = 1:npts_p(j))
+      do k = 1,npts_p(j)
         je2d_p = 0
 
 ! S2 grid does not have this point
@@ -203,6 +206,8 @@ module stencil_mod
     mlon0 = mlond0+1
     mlon1 = mlond1-1
 
+    src2d = 0
+
     do concurrent (i = mlon0:mlon1, j = mlat0:mlat1, isn = 1:2)
       src2d(isn,j,i) = sum(src3d(:,isn,j,i))
     enddo
@@ -219,18 +224,16 @@ module stencil_mod
     real(kind=rp),dimension(9,2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: coef2d
     real(kind=rp),dimension(mlatd0:mlatd1,mlond0:mlond1) :: bij
 
-    real(kind=rp),parameter :: &
-
 ! b_mult is [|Phi|/Delta(Phi)]*(R/L)^2, where Phi is a characteristic potential value,
 ! Delta(Phi) is a characteristic allowed interhemispheric potential difference,
 ! R is Earth radius, and L is a characteristic N-S length scale for Phi.
 ! It is assumed that b_mult is similar for middle and auroral latitudes.
-      b_mult = 1e3_rp, &
+    real(kind=rp),parameter :: b_mult = 1e3_rp
 
 ! pccolat is the polar cap colatitude, which for now is fixed.
 ! But it can be made variable w.r.t. time and magnetic longitude in the future.
-      pccolat = 14, & ! we can move this further equatorward
-      rho_pc = sin(pccolat*dtr)
+    real(kind=rp),parameter :: pccolat = 14, & ! we can move this further equatorward
+                               rho_pc = sin(pccolat*dtr)
 
     integer :: mlat0,mlat1,mlon0,mlon1,i,j
     real(kind=rp) :: fac3
