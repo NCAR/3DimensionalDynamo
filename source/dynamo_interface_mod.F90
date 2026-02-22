@@ -31,6 +31,7 @@ module dynamo_interface_mod
   use calculate_terms_mod, only: calculate_n, calculate_je
   use calculate_terms_mod, only: calculate_ed, calculate_ve, calculate_vxyz
   use calculate_terms_mod, only: calculate_conductance, balance_fac_hl
+  use calculate_terms_mod, only: calculate_ue
 
   use stencil_mod, only: calculate_coef2d, calculate_coef3d
   use stencil_mod, only: calculate_bij
@@ -277,8 +278,10 @@ contains
 
     real(rp) :: ntlU_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: ntlV_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: ntlW_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: ntlU_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: ntlV_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: ntlW_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
 
     real(rp) :: coef3d(9,nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: coef2d(9,2,mlatd0:mlatd1,mlond0:mlond1)
@@ -319,6 +322,16 @@ contains
     real(rp), parameter :: thres = 0.5_rp
     integer :: i, isn, j
 
+    real(rp) :: ue1_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: ue2_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: ue1_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: ue2_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+
+    real(rp) :: wn_s1(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
+    real(rp) :: wn_s2(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
+    wn_s1=0._rp
+    wn_s2=0._rp
+
     ! exchange P ghost points
     tmp_ghost(1,:,:,mlat0:mlat1,mlon0:mlon1) = sigped_p(:,:,mlat0:mlat1,mlon0:mlon1)
     call sync_mlat_5d(tmp_ghost(1:1,:,:,:,mlon0:mlon1), 1, nhgt_fix, 2)
@@ -337,6 +350,7 @@ contains
     sigH_s1(:,:,:,:) = tmp_ghost(2,:,:,:,:)
     ntlU_s1(:,:,:,:) = tmp_ghost(3,:,:,:,:)
     ntlV_s1(:,:,:,:) = tmp_ghost(4,:,:,:,:)
+    ntlW_s1(:,:,:,:) = 0._rp
 
     ! exchange S2 ghost points
     tmp_ghost(1,:,:,mlat0:mlat1,mlon0:mlon1) = sigped_s2(:,:,mlat0:mlat1,mlon0:mlon1)
@@ -349,15 +363,25 @@ contains
     sigH_s2(:,:,:,:) = tmp_ghost(2,:,:,:,:)
     ntlU_s2(:,:,:,:) = tmp_ghost(3,:,:,:,:)
     ntlV_s2(:,:,:,:) = tmp_ghost(4,:,:,:,:)
+    ntlW_s2(:,:,:,:) = 0._rp
 
     ! calculate field-line integrated conductance - P
-    call calculate_conductance( &
-         mlatd0,mlatd1,mlond0,mlond1, &
-         npts_p,vmp_p,bmag_p,sigP_p,zigP_p)
+    zigP_p = calculate_conductance( &
+      mlatd0,mlatd1,mlond0,mlond1,nmlat_h, &
+      npts_p,vmp_p,bmag_p,sigP_p)
+!    zigH_p = calculate_conductance( &
+!      mlatd0,mlatd1,mlond0,mlond1,nmlat_h, &
+!      npts_p,vmp_p,bmag_p,sigH_p)
 
     if (present(ped_cond_p)) then
        ped_cond_p(:,mlat0:mlat1,mlon0:mlon1) = zigP_p(:,mlat0:mlat1,mlon0:mlon1)
     end if
+
+! calculate winds in the perpendicular directions - S1,S2
+    call calculate_ue(mlatd0,mlatd1,mlond0,mlond1,nmlat_h, &
+      npts_s1,ntlU_s1,ntlV_s1,ntlW_s1,d1_s1,d2_s1,ue1_s1,ue2_s1)
+    call calculate_ue(mlatd0,mlatd1,mlond0,mlond1,nmlatS2_h, &
+      npts_s2,ntlU_s2,ntlV_s2,ntlW_s2,d1_s2,d2_s2,ue1_s2,ue2_s2)
 
     ! calculate N coefficients - S1,S2
     call calculate_n( &
@@ -368,10 +392,10 @@ contains
 
     ! calculate wind driven currents (Je1D,Je2D) - S1,S2
     call calculate_je( &
-         mlatd0,mlatd1,mlond0,mlond1,npts_s1,npts_s2, &
-         D_s1,be3_s1,d1d1_s1,d1d2_s1,d2d2_s1,sigP_s1,sigH_s1,ntlU_s1,ntlV_s1, &
-         D_s2,be3_s2,d1d2_s2,d2d2_s2,sigP_s2,sigH_s2,ntlU_s2,ntlV_s2, &
-         d1_s1,d2_s1,d1_s2,d2_s2,Je1D_s1,Je2D_s2)
+      mlatd0,mlatd1,mlond0,mlond1,npts_s1,npts_s2,J3LB, &
+      D_s1,be3_s1,d1d1_s1,d1d2_s1,d2d2_s1,sigP_s1,sigH_s1,ue1_s1,ue2_s1, &
+      D_s2,be3_s2,d1d2_s2,d2d2_s2,sigP_s2,sigH_s2,ue1_s2,ue2_s2, &
+      Je1D_s1,Je2D_s2)
 
     ! calculate height-dependent matrix coefficients
     coef3d = calculate_coef3d(mlatd0,mlatd1,mlond0,mlond1, &
@@ -438,18 +462,22 @@ contains
          pot_p,ed1_s1,ed2_s1,ed1_s2,ed2_s2)
 
     ! calculate drift velocities
+    call calculate_ve( & ! exclude pole and equator for S1
+      mlatd0,mlatd1,mlond0,mlond1,2,nmlat_h-1, &
+      ed1_s1,ed2_s1,be3_s1(1,:,:,:),ve1_s1,ve2_s1)
     call calculate_ve( &
-         mlatd0,mlatd1,mlond0,mlond1, &
-         ed1_s1,ed2_s1,be3_s1(1,:,:,:), &
-         ed1_s2,ed2_s2,be3_s2(1,:,:,:), &
-         ve1_s1,ve2_s1,ve1_s2,ve2_s2)
+      mlatd0,mlatd1,mlond0,mlond1,1,nmlatS2_h, &
+      ed1_s2,ed2_s2,be3_s2(1,:,:,:),ve1_s2,ve2_s2)
 
     ! calculate drift velocities in geographic coordinates
+    call calculate_vxyz( & ! exclude pole and equator for S1
+      mlatd0,mlatd1,mlond0,mlond1,2,nmlat_h-1, &
+      npts_s1(2:nmlat_h-1),ve1_s1,ve2_s1,e1_s1,e2_s1, &
+      vx_s1,vy_s1,vz_s1)
     call calculate_vxyz( &
-         mlatd0,mlatd1,mlond0,mlond1,npts_s1,npts_s2, &
-         ve1_s1,ve2_s1,e1_s1,e2_s1, &
-         ve1_s2,ve2_s2,e1_s2,e2_s2, &
-         vx_s1,vy_s1,vz_s1,vx_s2,vy_s2,vz_s2)
+      mlatd0,mlatd1,mlond0,mlond1,1,nmlatS2_h, &
+      npts_s2,ve1_s2,ve2_s2,e1_s2,e2_s2, &
+      vx_s2,vy_s2,vz_s2)
 
     ui_s1(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = vx_s1(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
     vi_s1(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = vy_s1(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
