@@ -445,10 +445,10 @@ contains
     end if
 
     ! construct linear system and solve
-    call linear_system(mlatd0,mlatd1,mlond0,mlond1, bij,pot_hl_p,fac_hl_loc,src2d,coef2d,pot_p)
+  !  call linear_system(mlatd0,mlatd1,mlond0,mlond1, bij,pot_hl_p,fac_hl_loc,src2d,coef2d,pot_p)
 
-  !  call linear_system(mlatd0,mlatd1,mlond0,mlond1, read_pot, read_fac, &
-  !                     bij,pot_hl_p,fac_hl_loc,src2d,coef2d,pot_p)
+    call linear_system(mlatd0,mlatd1,mlond0,mlond1, read_pot, read_fac, &
+                       bij,pot_hl_p,fac_hl_loc,src2d,coef2d,pot_p)
 
     if (read_pot) then ! pot_hl is input, fac_hl is output
       do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)
