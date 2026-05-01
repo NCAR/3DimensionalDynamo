@@ -30,8 +30,4 @@ module params_module
     hgt_fix, &    ! fixed heights - P,S1,S2
     hgt_fix_r     ! fixed heights - R
 
-  logical :: &
-    read_pot = .false., & ! whether potential is used at high latitude
-    read_fac = .false.
-
-end module params_module
+endmodule params_module

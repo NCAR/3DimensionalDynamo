@@ -9,32 +9,24 @@ module init_module
   subroutine init_cons
 ! Set derived constants
 
-    use params_module,only:nmlat_h,nmlon,ylatm
-    use cons_module,only:ylatm_JT,jlatm_JT,J3LB
-    use solver_module,only:nlonlat
+    use params_module,only:ylatm
+    use cons_module,only: ylatm_JT,jlatm_JT
 
     integer,dimension(1) :: idx
 
 ! get the index of ylatm_JT (index is counted from the pole)
-! which is the transition latitude between symmetric and asymmetric potentials
+! which is the transition latitude between equipotential and non-equipotential
     idx = minloc(abs(ylatm(2,:)-ylatm_JT))
     jlatm_JT = idx(1)
 
-! total number of latitudes to be solved (high-lat*2 + low-lat)
-! (jlatm_JT-1-2+1)*2 + (nmlat_h-jlatm_JT+1) = nmlat_h+jlatm_JT-3
-    nlonlat = (nmlat_h+jlatm_JT-3)*nmlon+1
-
-    allocate(J3LB(2,nmlat_h,0:nmlon+1))
-    J3LB = 0
-
-  endsubroutine init_cons
+  end subroutine init_cons
 !-----------------------------------------------------------------------
-  pure subroutine init_fieldline(npts_p,npts_s1,npts_s2,npts_r, &
+  subroutine init_fieldline(npts_p,npts_s1,npts_s2,npts_r, &
     jmax_p,jmax_s1,jmax_s2,jmax_r,size_p,size_s1,size_s2,size_r, &
     qdlat_p,qdlat_s1,qdlat_s2,qdlat_r)
 
     use params_module,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
-      hgt_fix,hgt_fix_r,ha,ha_s,ylatm,ylatm_s
+      nmlat_T1,nmlat_T2,hgt_fix,hgt_fix_r,ha,ha_s,ylatm,ylatm_s
     use cons_module,only:re,r0,fill_value
     use util_module,only:find
     use util_module,only:lamqd_from_apex_coord
@@ -48,7 +40,7 @@ module init_module
     real(kind=rp),dimension(nhgt_fix,2,nmlatS2_h),intent(out) :: qdlat_s2
     real(kind=rp),dimension(nhgt_fix_r,2,nmlat_h),intent(out) :: qdlat_r
 
-    integer :: j,isn,k,n
+    integer :: j,isn,k
 
     do concurrent (j = 1:nmlat_h)
       npts_p(j) = find(hgt_fix,ha(j))
@@ -60,41 +52,19 @@ module init_module
       npts_s2(j) = find(hgt_fix,ha_s(j))
     enddo
 
-! the number of points at a fixed height
-    do k = 1,nhgt_fix
-      do j = 1,nmlat_h ! from open to closed field line
-        if (ha(j) < hgt_fix(k)) exit ! find the latitude whose apex height is below this height
-      enddo
-      n = j-1 ! the apex height of open field lines will be higher than this height
-      jmax_p(k) = n
-      jmax_s1(k) = n
-      if (n == nmlat_h) then
-        size_p(k) = jmax_p(k)*2-1
-        size_s1(k) = jmax_s1(k)*2-1
-      else
-        size_p(k) = jmax_p(k)*2
-        size_s1(k) = jmax_s1(k)*2
-      endif
+    do concurrent (k = 1:nhgt_fix)
+      jmax_p(k) = nmlat_h-k+1
+      jmax_s1(k) = nmlat_h-k+1
+      jmax_s2(k) = nmlatS2_h-k+1
 
-      do j = 1,nmlatS2_h
-        if (ha_s(j) < hgt_fix(k)) exit
-      enddo
-      n = j-1
-      jmax_s2(k) = n
-      size_s2(k) = jmax_s2(k)*2
+      size_p(k) = nmlat_T1-(k-1)*2
+      size_s1(k) = nmlat_T1-(k-1)*2
+      size_s2(k) = nmlat_T2-(k-1)*2
     enddo
 
-    do k = 1,nhgt_fix_r
-      do j = 1,nmlat_h
-        if (ha(j) < hgt_fix_r(k)) exit
-      enddo
-      n = j-1
-      jmax_r(k) = n
-      if (n == nmlat_h) then
-        size_r(k) = jmax_r(k)*2-1
-      else
-        size_r(k) = jmax_r(k)*2
-      endif
+    do concurrent (k = 1:nhgt_fix_r)
+      jmax_r(k) = nmlat_h-k+1
+      size_r(k) = nmlat_T1-(k-1)*2
     enddo
 
 ! relationship between P,S1,S2 points for the same index (i,j):
@@ -129,31 +99,19 @@ module init_module
 
   endsubroutine init_fieldline
 !-----------------------------------------------------------------------
-  subroutine get_apex( npts_p,npts_s1,npts_s2,npts_r, &
-       qdlat_p,qdlat_s1,qdlat_s2,qdlat_r, &
-       glat_p, glon_p, glat_s1, glon_s1, glat_s2, glon_s2, glat_r, glon_r )
+  subroutine get_apex()
 
-    use params_module,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
-      hgt_fix,hgt_fix_r,ha,ha_s,ylatm,ylatm_s
-    use params_module,only:ylonm,ylonm_s
+    use params_module,only:hgt_fix,hgt_fix_r,nmlat_h,nmlatS2_h,ylonm,ylonm_s
     use cons_module,only:h0,rtd
-    use fieldline_module
-    use apex,only: apex_mall,apex_q2g
     use mpi_module,only:mlond0,mlond1,mlatd0,mlatd1
-
-    integer,dimension(nmlat_h),intent(in) :: npts_p,npts_s1,npts_r
-    integer,dimension(nmlatS2_h),intent(in) :: npts_s2
-    real(kind=rp),dimension(nhgt_fix,2,nmlat_h),intent(in) :: qdlat_p,qdlat_s1
-    real(kind=rp),dimension(nhgt_fix,2,nmlatS2_h),intent(in) :: qdlat_s2
-    real(kind=rp),dimension(nhgt_fix_r,2,nmlat_h),intent(in) :: qdlat_r
-    real(kind=rp),dimension(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1), intent(out) :: &
-         glat_p, glon_p, glat_s1, glon_s1, glat_s2, glon_s2
-    real(kind=rp),dimension(nhgt_fix_r,2,mlatd0:mlatd1,mlond0:mlond1), intent(out) :: &
-         glat_r, glon_r
+    use fieldline_module !, only: qdlat_p, glat_p, glon_p, sini_p, D_p, F_p, vmp_p, &
+       !  bmag_p, npts_p, qdlat_s1, glat_s1, glon_s1, sini_s1, D_s1, F_s1, vmp_s1, &
+       !  bmag_s1, be3_s1, d1d1_s1, d1d2_s1, d2d2_s1, d1_s1, d2_s1
+    use apex,only: apex_mall,apex_q2g
 
     real(kind=rp),parameter :: hr = h0*1e-3_rp
     integer :: i,j,isn,k,icomp, &
-      ist ! for generating interpolation grids in apex
+      nlat,nlon,nalt,ist ! for generating interpolation grids in apex
     real(kind=rp) :: qdlat,qdlon,alt,gdlat,gdlon, &
 ! scalar arguments returned by APXMALL
       bmag,si,alon,xlatm,vmp,w,d,be3,sim,xlatqd,f
@@ -201,6 +159,7 @@ module init_module
               glat_p(k,isn,j,i) = gdlat
               glon_p(k,isn,j,i) = gdlon
 
+              sinI_p(k,isn,j,i) = si ! sin(I)
               D_p(k,isn,j,i) = d
               F_p(k,isn,j,i) = f
               vmp_p(k,isn,j,i) = vmp ! magnitude potential Tm (diagnostic for ds calculation)
@@ -223,8 +182,11 @@ module init_module
               glon_s1(k,isn,j,i) = gdlon
 
 ! these are the same using the "new" coordinate system and the one from the paper
+              sinI_s1(k,isn,j,i) = si ! sin(I)
               D_s1(k,isn,j,i) = d
               F_s1(k,isn,j,i) = f
+              vmp_s1(k,isn,j,i) = vmp ! magnitude potential Tm (diagnostic for ds calculation)
+              bmag_s1(k,isn,j,i) = bmag*1e-9_rp ! magnitude of magnetic field, convert from [nT] to [T]
               be3_s1(k,isn,j,i) = be3*1e-9_rp ! B0=Be3*e3, convert from [nT] to [T]
               d1d1_s1(k,isn,j,i) = dot_product(d1,d1)
               d1d2_s1(k,isn,j,i) = dot_product(d1,d2)
@@ -254,6 +216,7 @@ module init_module
               glat_r(k,isn,j,i) = gdlat
               glon_r(k,isn,j,i) = gdlon
 
+              sinI_r(k,isn,j,i) = si ! sin(I)
               D_r(k,isn,j,i) = d
               F_r(k,isn,j,i) = f
             enddo
@@ -278,8 +241,11 @@ module init_module
               glon_s2(k,isn,j,i) = gdlon
 
 ! these are the same using the "new" coordinate system and the one from the paper
+              sinI_s2(k,isn,j,i) = si ! sin(I)
               D_s2(k,isn,j,i) = d
               F_s2(k,isn,j,i) = f
+              vmp_s2(k,isn,j,i) = vmp ! magnitude potential Tm (diagnostic for ds calculation)
+              bmag_s2(k,isn,j,i) = bmag*1e-9_rp ! magnitude of magnetic field, convert from [nT] to [T]
               be3_s2(k,isn,j,i) = be3*1e-9_rp ! B0=Be3*e3, convert from [nT] to [T]
               d1d1_s2(k,isn,j,i) = dot_product(d1,d1)
               d1d2_s2(k,isn,j,i) = dot_product(d1,d2)
@@ -300,17 +266,38 @@ module init_module
 
   endsubroutine get_apex
 !-----------------------------------------------------------------------
-  pure subroutine calculate_a(a1,a3)
+  subroutine calculate_m(npts_p,npts_s1,npts_s2,npts_r, &
+    F_p,F_s1,F_s2,F_r,M3_p,M1_s1,M2_s2,M3_r)
+! calculate normalized integrated areas from the pole to an S2 surface
+! in the meridional (a1) and horizontal (a3) planes
+! the factors m1f,m2f,m3f are independent of magnetic longitude
+! these factors later give M1,M2,M3 when divided by F
+
+    use params_module,only:nhgt_fix,nhgt_fix_r, &
+      nmlat_h,nmlatS2_h,ylonm,rho_s,hgt_fix,hgt_fix_r
+    use cons_module,only:pi,re,r0,fill_value
+    use mpi_module,only:mlond0,mlond1,mlatd0,mlatd1
+
+    integer,dimension(nmlat_h),intent(in) :: npts_p,npts_s1,npts_r
+    integer,dimension(nmlatS2_h),intent(in) :: npts_s2
+    real(kind=rp),dimension(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: F_p,F_s1,F_s2
+    real(kind=rp),dimension(nhgt_fix_r,2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: F_r
+    real(kind=rp),dimension(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1),intent(out) :: M3_p,M1_s1,M2_s2
+    real(kind=rp),dimension(nhgt_fix_r,2,mlatd0:mlatd1,mlond0:mlond1),intent(out) :: M3_r
+
+    integer :: i,j,isn,k
+    real(kind=rp) :: dlonm,rm1,rp1,dr,tmp,ra,rbar
+
 ! a1,a3 vary from 0 at the magnetic pole to 1 at the magnetic equator
+    real(kind=rp),dimension(nhgt_fix  ,nmlat_h+1) :: a1 ! normalized integral of M1*F
+    real(kind=rp),dimension(nhgt_fix_r,nmlat_h+1) :: a3 ! normalized integral of M3*F
 
-    use params_module,only:nhgt_fix,nhgt_fix_r,nmlat_h,rho_s,hgt_fix_r
-    use cons_module,only:pi,re,r0
+! M1*F, M2*F, M3*F
+    real(kind=rp),dimension(nhgt_fix  ,nmlat_h) :: m1f,m2f
+    real(kind=rp),dimension(nhgt_fix_r,nmlat_h) :: m3f
 
-    real(kind=rp),dimension(nhgt_fix  ,nmlat_h+1),intent(out) :: a1
-    real(kind=rp),dimension(nhgt_fix_r,nmlat_h+1),intent(out) :: a3
-
-    integer :: j,k
-    real(kind=rp) :: rm1,rp1,dr,tmp,ra,rbar
+! assume equidistant longitudinal grid points
+    dlonm = ylonm(2)-ylonm(1)
 
 ! in order to include the pole, the first index of a1,a3 represents the location j-0.5, not j+0.5
 ! however, the first index of m1f,m2f,m3f represents the location j+0.5, which are the S2 points
@@ -363,97 +350,57 @@ module init_module
       a3(k,j+1) = 1-sqrt(max(1-rm1*rho_s(j)**2,0.0_rp))
     enddo
 
-  end subroutine calculate_a
-!-----------------------------------------------------------------------
-  pure subroutine calculate_m( npts_p,npts_s1,npts_s2,npts_r, &
-    F_p,F_s1,F_s2,F_r,M3_p,M1_s1,M2_s2,M3_r)
-! calculate integrated areas for each surface of a volume (Chapter 5)
+! set m1f,m2f,m3f to 0 beyond equator
+! (points before equator will be overwritten later)
+    m1f = 0
+    m2f = 0
+    m3f = 0
 
-    use params_module,only:nhgt_fix,nhgt_fix_r, &
-      nmlat_h,nmlatS2_h,ylonm,rho_s,hgt_fix,hgt_fix_r
-    use cons_module,only:re,r0,fill_value
-    use mpi_module,only:mlond0,mlond1,mlatd0,mlatd1
+    do concurrent (k = 1:nhgt_fix)
 
-    integer,dimension(nmlat_h),intent(in) :: npts_p,npts_s1,npts_r
-    integer,dimension(nmlatS2_h),intent(in) :: npts_s2
-    real(kind=rp),dimension(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: F_p,F_s1,F_s2
-    real(kind=rp),dimension(nhgt_fix_r,2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: F_r
-    real(kind=rp),dimension(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1),intent(out) :: M3_p,M1_s1,M2_s2
-    real(kind=rp),dimension(nhgt_fix_r,2,mlatd0:mlatd1,mlond0:mlond1),intent(out) :: M3_r
+! normalized radii of the top and bottom of layer k
+      rp1 = (hgt_fix_r(k+1)+re)/r0 ! r_k+0.5/R
+      rm1 = (hgt_fix_r(k  )+re)/r0 ! r_k-0.5/R
+      dr = rp1-rm1
 
-    integer :: i,j,isn,k
-    real(kind=rp) :: dlonm,rp1,rm1,rp1s,rm1s,rap1,ram1,tmp
+      do concurrent (j = 1:nmlat_h-k)
 
-! M1*F, M2*F, M3*F (independent of magnetic longitude)
-! these factors later give M1,M2,M3 when divided by F
-    real(kind=rp),dimension(nhgt_fix  ,nmlat_h  ) :: m1f
-    real(kind=rp),dimension(nhgt_fix  ,nmlatS2_h) :: m2f
-    real(kind=rp),dimension(nhgt_fix_r,nmlat_h  ) :: m3f
+! first index of a1,a3 is j+1 because this corresponds to position j+0.5
+        m3f(k,j) = (hgt_fix_r(k)+re)**2*dlonm*(a3(k,j+1)-a3(k,j))
 
-! assume equidistant longitudinal grid points
-    dlonm = ylonm(2)-ylonm(1)
+        m1f(k,j) = (hgt_fix(k)+re)**2*sqrt((hgt_fix(k)+re)/r0)*dr*pi/2*(a1(k,j+1)-a1(k,j))
 
-! M1*F (this is different from the note)
-    do concurrent (j = 1:nmlat_h, k = 1:nhgt_fix)
-      rp1 = (hgt_fix_r(k+1)+re)/r0
-      rm1 = (hgt_fix_r(k  )+re)/r0
-      rp1s = sqrt(rp1)
-      rm1s = sqrt(rm1)
+        tmp = sqrt(max(1-rm1*rho_s(j)**2,0.0_rp))-sqrt(max(1-rp1*rho_s(j)**2,0.0_rp))
+        m2f(k,j) = 2*dlonm*(hgt_fix(k)+re)**3/r0*tmp*sqrt(1-3*rho_s(j)**2/4)/rho_s(j)
+      enddo
 
-      if (j == 1) then ! let rho(0.5) = rho_s(0) = 0
-        rap1 = 1/rho_s(j)**2
-        tmp = rp1s*asin(min(rp1s*rho_s(j),1.0_rp)) - rm1s*asin(min(rm1s*rho_s(j),1.0_rp)) + &
-              sqrt(max(rap1-rp1,0.0_rp)) - sqrt(max(rap1-rm1,0.0_rp))
-      elseif (j == nmlat_h) then ! let rho(J+0.5) = rho_s(J) = 1
-        rap1 = 1
-        ram1 = 1/rho_s(j-1)**2
-        tmp = (rp1s*asin(min(rp1s           ,1.0_rp)) - rm1s*asin(min(rm1s           ,1.0_rp))) - &
-              (rp1s*asin(min(rp1s*rho_s(j-1),1.0_rp)) - rm1s*asin(min(rm1s*rho_s(j-1),1.0_rp))) + &
-              (sqrt(max(rap1-rp1,0.0_rp)) - sqrt(max(rap1-rm1,0.0_rp))) - &
-              (sqrt(max(ram1-rp1,0.0_rp)) - sqrt(max(ram1-rm1,0.0_rp)))
-      else
-        rap1 = 1/rho_s(j  )**2
-        ram1 = 1/rho_s(j-1)**2
-        tmp = (rp1s*asin(min(rp1s*rho_s(j  ),1.0_rp)) - rm1s*asin(min(rm1s*rho_s(j  ),1.0_rp))) - &
-              (rp1s*asin(min(rp1s*rho_s(j-1),1.0_rp)) - rm1s*asin(min(rm1s*rho_s(j-1),1.0_rp))) + &
-              (sqrt(max(rap1-rp1,0.0_rp)) - sqrt(max(rap1-rm1,0.0_rp))) - &
-              (sqrt(max(ram1-rp1,0.0_rp)) - sqrt(max(ram1-rm1,0.0_rp)))
-      endif
-      m1f(k,j) = 2*(hgt_fix(k)+re)**3/r0*max(tmp,0.0_rp)
+      j = nmlat_h-k+1
+      m3f(k,j) = (hgt_fix_r(k)+re)**2*dlonm*(1-a3(k,j))
+      m1f(k,j) = (hgt_fix(k)+re)**2*sqrt((hgt_fix(k)+re)/r0)*dr*pi/2*(1-a1(k,j))
     enddo
 
-! M2*F
-    do concurrent (j = 1:nmlatS2_h, k = 1:nhgt_fix)
-      rp1 = (hgt_fix_r(k+1)+re)/r0
-      rm1 = (hgt_fix_r(k  )+re)/r0
-      rap1 = 1/rho_s(j)**2
-
-      tmp = sqrt(max(rap1-rm1,0.0_rp))-sqrt(max(rap1-rp1,0.0_rp))
-      m2f(k,j) = 2*(hgt_fix(k)+re)**3/r0*sqrt(1-3*rho_s(j)**2/4)*dlonm*max(tmp,0.0_rp)
+! now do m3f for top level
+    k = nhgt_fix_r
+    do concurrent (j = 1:nmlat_h-k)
+      m3f(k,j) = (hgt_fix_r(k)+re)**2*dlonm*(a3(k,j+1)-a3(k,j))
     enddo
 
-! M3*F
-    do concurrent (j = 1:nmlat_h, k = 1:nhgt_fix_r)
-      rm1 = (hgt_fix_r(k)+re)/r0
-
-      if (j == 1) then ! let rho(0.5) = rho_s(0) = 0
-        tmp = 1-sqrt(max(1-rm1*rho_s(j)**2,0.0_rp))
-      elseif (j == nmlat_h) then ! let rho(J+0.5) = rho_s(J) = 1
-        tmp = sqrt(max(1-rm1*rho_s(j-1)**2,0.0_rp))-sqrt(max(1-rm1,0.0_rp))
-      else
-        tmp = sqrt(max(1-rm1*rho_s(j-1)**2,0.0_rp))-sqrt(max(1-rm1*rho_s(j)**2,0.0_rp))
-      endif
-      m3f(k,j) = (hgt_fix_r(k)+re)**2*dlonm*max(tmp,0.0_rp)
-    enddo
+    j = nmlat_h-k+1
+    m3f(k,j) = (hgt_fix_r(k)+re)**2*dlonm*(1-a3(k,j))
 
     M3_p = fill_value
     M1_s1 = fill_value
     M2_s2 = fill_value
     M3_r = fill_value
 
+! page 8 Eq (64') Art's notes (updated 2015/08/03)
     do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)
+
+! calculate M3 for Jr calculation
+! M3(i,j,k) = r(k)^2*(phi(i+0.5)-phi(i-0.5))*sqrt(1-r(k)/R*rho(j)^2)*
+!             [sqrt(1-r(k)/R*rho(j-0.5)^2)-sqrt(1-r(k)/R*rho(j+0.5)^2)]/F(i,j,k-0.5)
       do concurrent (k = 1:npts_p(j))
-        M3_p(k,isn,j,i) = m3f(k,j)/F_p(k,isn,j,i) ! M3 is used in Jr calculation
+        M3_p(k,isn,j,i) = m3f(k,j)/F_p(k,isn,j,i)
       enddo
 
       do concurrent (k = 1:npts_s1(j))
@@ -472,5 +419,4 @@ module init_module
     enddo
 
   endsubroutine calculate_m
-!-----------------------------------------------------------------------
-endmodule init_module
+end module init_module
