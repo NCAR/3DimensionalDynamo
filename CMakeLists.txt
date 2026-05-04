@@ -8,7 +8,10 @@ project(
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 find_package(MPI REQUIRED Fortran)
-find_package(superlu REQUIRED C)
+#find_package(superlu REQUIRED C)
+
+include_directories($ENV{NETCDF}/include $ENV{NCAR_INC_SUPERLU_DIST})
+link_directories($ENV{NETCDF}/lib $ENV{NCAR_LDFLAGS_SUPERLU_DIST})
 
 set(src)
 
@@ -22,9 +25,9 @@ add_executable(
   "${src}"
 )
 
-target_include_directories("${PROJECT_NAME}" PRIVATE $ENV{NETCDF}/include)
-target_link_directories("${PROJECT_NAME}" PRIVATE $ENV{NETCDF}/lib)
-target_link_libraries("${PROJECT_NAME}" PRIVATE superlu::superlu netcdff)
+#target_include_directories("${PROJECT_NAME}" PRIVATE $ENV{NETCDF}/include)
+#target_link_directories("${PROJECT_NAME}" PRIVATE $ENV{NETCDF}/lib)
+target_link_libraries("${PROJECT_NAME}" superlu_dist_fortran superlu_dist netcdff)
 
 # Using set_target_properties for each target is usually preferred
 set_target_properties(

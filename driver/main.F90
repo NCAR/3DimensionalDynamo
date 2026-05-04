@@ -32,7 +32,7 @@ program main
 
   character(len=*), parameter :: prefix = '3D-Dynamamo test: '
 
-  integer :: ierr, job_size, my_rank, itime
+  integer :: ierr, job_size, dyn_size, my_rank, itime
 
   real(r8), allocatable :: un_s1(:,:,:,:)
   real(r8), allocatable :: un_s2(:,:,:,:)
@@ -67,16 +67,21 @@ program main
   real(r8), allocatable :: elec_pot_p(:,:,:)
   real(r8), allocatable :: ped_cond_p(:,:,:)
 
+  integer, parameter :: edyn3d_slu_refactor_int = 20 !superlu refactor interval
+  real(r8),parameter :: edyn3d_slu_refactor_berr = 1e-12 !superlu refactor backward error
+
   print*,'BEGIN TEST...'
 
   call mpi_init(ierr)
   print*,'... mpi_init ierr: ',ierr, MPI_ERROR,' ERROR? ',ierr==MPI_ERROR
 
   call mpi_comm_size(MPI_COMM_WORLD, job_size, ierr)
+  dyn_size = job_size/2
 
   call mpi_comm_rank(MPI_COMM_WORLD, my_rank, ierr)
 
   print*,' my rank : ',my_rank,' of ',job_size
+  print*,' dyn_size : ',dyn_size
 
   call inputdata_init(infilepath)
 
@@ -85,8 +90,10 @@ program main
   call dynamo_init1( &
        set_hilat_pot_in=.true., &
        set_hilat_fac_in=.false., &
-       mpicom_atm=MPI_COMM_WORLD, npes_edyn3D=job_size, &
+       mpicom_atm=MPI_COMM_WORLD, npes_edyn3D=dyn_size, &
        edyn3d_nmlat_h=edyn3d_nmlat_h, edyn3d_nmlon=edyn3d_nmlon, edyn3d_nhgt=edyn3d_nhgt, &
+       edyn3d_slu_refactor_int=edyn3d_slu_refactor_int,  &
+       edyn3d_slu_refactor_berr=edyn3d_slu_refactor_berr, &
        real_kind=r8 )
 
   write(*,*) prefix,'3D Edyn grid params nmlat_h,nmlon,nhgt_fix: ',nmlat_h,nmlon,nhgt_fix

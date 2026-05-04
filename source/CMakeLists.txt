@@ -13,9 +13,13 @@ list(
   "${dir}/params_module.F90"
   "${dir}/prec.F90"
   "${dir}/solver_module.F90"
+  "${dir}/dist_solver_module.F90"
+  "${dir}/dist_spmv_mod.f90"
+  "${dir}/superlu_mod.f90"
+  "${dir}/superlupara.f90"
   "${dir}/stencil_module.F90"
   "${dir}/util_module.F90"
-  "${dir}/c_fortran_dgssv.c"
+  "${dir}/c_helpers.c"
 )
 
 set(src "${src}" PARENT_SCOPE)

@@ -2,8 +2,6 @@
 module mpi_module
 
   use prec, only: rp
-  use cam_logfile, only: iulog
-  use cam_abortutils, only: endrun
 #ifdef PARALLEL
   use MPI
   use iso_fortran_env, only: real32,real64
@@ -73,14 +71,14 @@ module mpi_module
     ! MUST be even (or 1) and at most half the number of procs in mpi_comm_host (unless host is size 1)
     mid = npes_host / 2
     if (npes_host == 1 .and. npes_edyn3d == 1) then
-       write(iulog,*) 'MPI init check: size for edyn3d and cam are both size 1'
+       write(*,*) 'MPI init check: size for edyn3d and cam are both size 1'
     else
        if (npes_edyn3d > mid) then
-          write(iulog,*) 'MPI init ERROR: npes_edyn3d can be at most half the size of the number of procs used for cam, so must be <=', mid
-          call endrun('MPI init ERROR: npes_edyn3d can be at most half the size of the number of procs used for cam')
+          write(*,*) 'MPI init ERROR: npes_edyn3d can be at most half the size of the number of procs used for cam, so must be <=', mid
+          error stop 'MPI init ERROR: npes_edyn3d can be at most half the size of the number of procs used for cam'
        elseif ((npes_edyn3d /= 1 .and. mod(npes_edyn3d, 2) /= 0)) then
-          write(iulog,*) 'MPI init ERROR: npes_edyn3d must be even'
-          call endrun('MPI init ERROR: npes_edyn3d must be even')
+          write(*,*) 'MPI init ERROR: npes_edyn3d must be even'
+          error stop 'MPI init ERROR: npes_edyn3d must be even'
        endif
     endif
 
@@ -89,8 +87,8 @@ module mpi_module
        !one for the majority of the dynamo work and a second for the linear solve
        !double check
        if (npes_edyn3d*2 > npes_host) then
-          write(iulog,*) 'MPI init ERROR: npes_edyn3d size'
-          call endrun('MPI init ERROR: npes_edyn3d size')
+          write(*,*) 'MPI init ERROR: npes_edyn3d size'
+          error stop 'MPI init ERROR: npes_edyn3d size'
        end if
 
        !first get original group
@@ -1533,7 +1531,7 @@ endfunction all_gather_int
        endif
 
        if (latrank < 0 .OR. latrank >= lat_size) then
-          !write(iulog,*) "Error with latrank in calc_grid_ij: mpi_rank, latrank", mpi_rank, latrank
+          !write(*,*) "Error with latrank in calc_grid_ij: mpi_rank, latrank", mpi_rank, latrank
           ij = -1
           return
        endif
@@ -1572,7 +1570,7 @@ endfunction all_gather_int
        endif
 
         if (latrank < 0 .OR. latrank >= lat_size) then
-           !write(iulog,*) "Error with latrank in calc_grid_ij: mpi_rank, latrank", mpi_rank, latrank
+           !write(*,*) "Error with latrank in calc_grid_ij: mpi_rank, latrank", mpi_rank, latrank
            ij = -2
            return
        endif

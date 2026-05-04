@@ -1,10 +1,8 @@
 module dist_solver_module
-  use perf_mod, only: t_startf, t_stopf
   use superlu_mod
 
   use prec,only:rp
   use iso_c_binding
-  use cam_logfile, only: iulog
   use dist_spmv_mod
 
   include 'netcdf.inc'
@@ -109,8 +107,6 @@ module dist_solver_module
     else
        output_matrix = .false.
     endif
-
-    call t_startf('dist_linear_system')
 
     ! global matrix size
     nlonlat = nmlat_T1*nmlon
@@ -244,9 +240,7 @@ module dist_solver_module
 
       endif
 
-     call t_startf('linear_system->solve_superlu')
      sol = dist_solve_superlu(nlonlat, mygrid_size, nnz, g_rowptr, g_colind(1:nnz), g_values_csr(1:nnz), rhs)
-     call t_stopf('linear_system->solve_superlu')
 
      !print *, 'Dist_ls: done with solve'
 
@@ -285,9 +279,6 @@ module dist_solver_module
      if (allocated(z)) deallocate(z)
      if (allocated(pot_hl_f)) deallocate(pot_hl_f)
      if (allocated(sol)) deallocate(sol)
-
-
-     call t_stopf('dist_linear_system')
 
   endsubroutine dist_linear_system
 !-----------------------------------------------------------------------
@@ -599,7 +590,7 @@ module dist_solver_module
                 ! note that coef has the direction switched in the NH
                 ij = calc_grid_ij(i,jN,lat_rank)
                 if (ij > ij_stop_n .or. ij < ij_start_n) then
-                   write(iulog,*) 'Dist_ls: Error ij north index 1 for lhs', mpi_rank, ij
+                   write(*,*) 'Dist_ls: Error ij north index 1 for lhs', mpi_rank, ij
                 endif
 
                 !coef 4 (i-1, j-1)
@@ -858,7 +849,7 @@ module dist_solver_module
                 ij = calc_grid_ij(i,jN,lat_rank)
 
                 if (ij > ij_stop_n .or. ij < ij_start_n) then
-                   write(iulog,*) 'Dist_construct_lhs: Error ij north index 3 for lhs', mpi_rank, ij
+                   write(*,*) 'Dist_construct_lhs: Error ij north index 3 for lhs', mpi_rank, ij
                 endif
 
                 !coef 4 (i-1, j-1)
@@ -1629,7 +1620,7 @@ end function compute_pattern_hash
                 fout_s(ij) = fin(1,j,i)
                 if (isnan(fout_s(ij))) write(*,*) 'Flatten warning: fout_s(ij) is NaN, ij, i, jS = ', ij, i, jS
              else
-                write(iulog,*) "Error in flatten south, mpirank, ij = ", mpi_rank, ij
+                write(*,*) "Error in flatten south, mpirank, ij = ", mpi_rank, ij
              endif
 
              !north
@@ -1640,7 +1631,7 @@ end function compute_pattern_hash
                 fout_n(ij) = fin(2,j,i)
                 if (isnan(fout_n(ij))) write(*,*) 'Flatten warning: fout_n(ij) is NaN, ij, i, jN = ', ij, i, jN
              else
-                write(iulog,*) "Error in flatten north, mpirank, ij = ", mpi_rank, ij
+                write(*,*) "Error in flatten north, mpirank, ij = ", mpi_rank, ij
              endif
           enddo
        endif
@@ -1661,7 +1652,7 @@ end function compute_pattern_hash
                 fout_s(ij) = avg
                 if (isnan(fout_s(ij))) write(*,*) 'Flatten warning: fout_s(ij) is NaN, ij, i, jS = ', ij, i, jS
              else
-                write(iulog,*) "Error in flatten 2 south, mpirank, ij = ", mpi_rank, ij
+                write(*,*) "Error in flatten 2 south, mpirank, ij = ", mpi_rank, ij
              endif
 
              !north
@@ -1677,7 +1668,7 @@ end function compute_pattern_hash
                 if (isnan(fout_n(ij))) write(*,*) 'Flatten warning: fout_n(ij) is NaN, ij, i, jN = ', ij, i, jN
 
              else
-                write(iulog,*) "Error in flatten 2 north, mpirank, ij = ", mpi_rank, ij
+                write(*,*) "Error in flatten 2 north, mpirank, ij = ", mpi_rank, ij
              endif
 
           enddo
