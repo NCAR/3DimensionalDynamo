@@ -12,7 +12,6 @@ list(
   "${dir}/mpi_module.F90"
   "${dir}/params_module.F90"
   "${dir}/prec.F90"
-  "${dir}/solver_module.F90"
   "${dir}/dist_solver_module.F90"
   "${dir}/dist_spmv_mod.f90"
   "${dir}/superlu_mod.f90"
