@@ -30,7 +30,7 @@ contains
 
 subroutine get_GridInfo(grid, iam, nprow, npcol, npdep)
   integer(superlu_ptr) :: grid     !! can be 2D or 3D grid
-  integer*4, optional :: iam
+  integer, optional :: iam
   integer, optional :: nprow, npcol, npdep
   integer :: l_iam, l_nprow, l_npcol, l_npdep
 

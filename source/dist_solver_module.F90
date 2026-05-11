@@ -4,10 +4,10 @@ module dist_solver_module
   use prec,only:rp
   use iso_c_binding
   use dist_spmv_mod
+  use, intrinsic :: ieee_arithmetic, only: isnan => ieee_is_nan
 
   include 'netcdf.inc'
-  !!#include "superlu_dist_config.fh"
-
+  include 'superlu_dist_config.fh'
 
   !max nonzeros per row (this does not incl the dense row at the pole)
   integer, parameter :: MAX_NNZ=12
@@ -1239,7 +1239,11 @@ module dist_solver_module
           do ij = ij_start_s, ij_stop_s
              cnt = cnt + 1
              rhs(cnt) = rhs_s(ij)
-             if (isnan(rhs(cnt))) write(*,*) 'Dist_construct_rhs ERROR: rhs(cnt) is NaN, cnt = ', cnt, ' rank = ', mpi_rank
+
+             if (isnan(rhs(cnt))) then
+                write(*,*) 'Dist_construct_rhs ERROR: rhs(cnt) is NaN, cnt = ', &
+                     cnt, ' rank = ', mpi_rank
+             end if
           enddo
        elseif (ex_mpi_rank >=0) then
           do i = 1, mygrid_size
@@ -1481,7 +1485,8 @@ module dist_solver_module
     !check backward error and refinement steps to see if we need to force refactor next time
     if (berr_array(1) > superlu_refactor_berr) then
        if (un_mpi_rank == 0) then
-          write(*,*) "Superlu status: Backward error is high (", berr_array(1), "). Force a refactor at the next solve ... "
+          write(*,*) "Superlu status: Backward error is high (", berr_array(1), &
+               "). Force a refactor at the next solve ... "
        endif
        !Force a full refactor next time
        force_refactor = .true.
@@ -1490,7 +1495,8 @@ module dist_solver_module
        if (refinement_steps > 5) then
           force_refactor = .true.
           if (un_mpi_rank == 0) then
-             write(*,*), 'SuperLU Warning: Number of refinement iterations is greater than 5 (', refinement_steps, '), and will force a refactor at the next solve ...'
+             write(*,*) 'SuperLU Warning: Number of refinement iterations is greater than 5 (', &
+                  refinement_steps, '), and will force a refactor at the next solve ...'
           endif
        else
           force_refactor = .false.
@@ -1540,7 +1546,6 @@ module dist_solver_module
 
 function compute_pattern_hash(rowptr, colind) result(h)
   use iso_c_binding, only: c_int, c_int64_t
-  implicit none
 
   integer(kind=c_int), intent(in) :: rowptr(:)
   integer(kind=c_int), intent(in) :: colind(:)

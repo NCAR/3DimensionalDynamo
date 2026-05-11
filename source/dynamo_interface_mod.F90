@@ -470,11 +470,11 @@ contains
   subroutine dynamo_final()
 
 !    call dealloc_fieldline()
-
-    if (associated(glat_p)) then
-       deallocate(glat_p)
-       nullify(glat_p)
-    end if
+!!$
+!!$    if (associated(glat_p)) then
+!!$       deallocate(glat_p)
+!!$       nullify(glat_p)
+!!$    end if
 !!$    if (allocated(glon_p)) deallocate(glon_p)
 !!$    if (allocated(glat_s1)) deallocate(glat_s1)
 !!$    if (allocated(glon_s1)) deallocate(glon_s1)

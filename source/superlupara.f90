@@ -9,7 +9,7 @@
 !! </pre>
 
 module superlupara_mod
-
+  use iso_fortran_env, only: int64
 !----------------------------------------------------
 ! This module contains some parameter used in SUPERLU for Fortran90 user.
 !----------------------------------------------------
@@ -24,7 +24,7 @@ public superlu_ptr
 ! If changed, be sure to change it in superlu_c2f_wrap.c too.
 !
 ! integer, parameter :: superlu_ptr = kind(0) ! default integer size: 32-bit
-integer, parameter :: superlu_ptr = 8 ! 64-bit
+integer, parameter :: superlu_ptr = int64 ! 64-bit
 
 !----------------------------------------------------
 ! The following parameters are defined:
