@@ -56,7 +56,7 @@ contains
     character(len=*), parameter :: prefix = 'inputdata_init: '
     character(len=32) :: dim_name
 
-    write(*,*) prefix//' open: ',trim(filepath)
+    !write(*,*) prefix//' open: ',trim(filepath)
 
     call handle_error( nf90_open(path=filepath, mode=NF90_NOWRITE, ncid=ncid), prefix//'nf90_open ERROR: '//filepath )
 

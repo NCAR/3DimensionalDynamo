@@ -26,7 +26,6 @@ program main
   include 'mpif.h'
 
   character(len=*), parameter :: infilepath = '../data/FX2000_f19_wcmx_3Dedyn_test01.cam.h2i.0001-01-01-07200.nc'
-!  character(len=*), parameter :: infilepath = '../data/FX2000_ne16pg3_wcmx_3Dedyn_test04.cam.h2i.0001-01-01-00000.nc'
 
   real(r8), parameter :: geomag_year = 2000.50
 
@@ -73,19 +72,20 @@ program main
   print*,'BEGIN TEST...'
 
   call mpi_init(ierr)
-  print*,'... mpi_init ierr: ',ierr, MPI_ERROR,' ERROR? ',ierr==MPI_ERROR
+  !print*,'... mpi_init ierr: ',ierr, MPI_ERROR,' ERROR? ',ierr==MPI_ERROR
 
   call mpi_comm_size(MPI_COMM_WORLD, job_size, ierr)
   dyn_size = job_size/2
 
   call mpi_comm_rank(MPI_COMM_WORLD, my_rank, ierr)
 
-  print*,' my rank : ',my_rank,' of ',job_size
-  print*,' dyn_size : ',dyn_size
+  !print*,' my rank : ',my_rank,' of ',job_size
+  !print*,' dyn_size : ',dyn_size
 
   call inputdata_init(infilepath)
 
-  write(*,*) prefix,'call dynamo_init1 ...'
+  !write(*,*) prefix,'call dynamo_init1 ...'
+
   ! before apex init
   call dynamo_init1( &
        set_hilat_pot_in=.true., &
@@ -104,10 +104,10 @@ program main
   ! initialize APEX -- after dynamo_init1 and before dynamo_init2
   ! call mo_apex_init1( alts_in=hgt_fix_r*1.e-3_r8 ) ! m --> km
 
-  write(*,*) prefix,'call APEX setup ...'
+  !write(*,*) prefix,'call APEX setup ...'
   call apex_setup(date=2010.2_r8 ,altmax=maxval(hgt_fix_r*1.e-3_r8))
 
-  write(*,*) prefix,'call dynamo_init2 ...'
+  !write(*,*) prefix,'call dynamo_init2 ...'
   ! after apex init
   call dynamo_init2()
 
@@ -175,7 +175,9 @@ program main
      call inputdata_read_s2_fld( varid=sigma_ped_s2_vid, time_ndx=itime, fld=sigma_ped_s2 )
      call inputdata_read_2dp_fld(hilat_pot_vid, itime, pot_hl_p)
 
-     write(*,*) prefix,' ... itime:',itime,' maxval( sigma_ped_s2 ): ',maxval( sigma_ped_s2 )
+     if (mpi_rank >= 0) then
+        write(*,*) ' ... itime:',itime,' maxval( sigma_ped_s2 ): ',maxval( sigma_ped_s2 )
+     end if
 
      call outputdata_write_s1_fld( varname='un_s1', time_ndx=itime, fld=un_s1 )
      call outputdata_write_s2_fld( varname='un_s2', time_ndx=itime, fld=un_s2 )
@@ -195,7 +197,9 @@ program main
           efld1_s1, efld2_s1, efld1_s2, efld2_s2, &
           ionvel1_s1, ionvel2_s1, ionvel1_s2, ionvel2_s2)
 
-     print*,'*** max min elec_pot_p: ',minval(elec_pot_p), maxval(elec_pot_p)
+     if (mpi_rank >= 0) then
+        write(*,*) ' ... max min elec_pot_p: ',minval(elec_pot_p), maxval(elec_pot_p)
+     end if
 
      call outputdata_write_2dp_fld('HILAT_POT',itime, pot_hl_p(:,mlat0:mlat1,mlon0:mlon1))
      call outputdata_write_2dp_fld('HILAT_FAC',itime, fac_hl_p(:,mlat0:mlat1,mlon0:mlon1))
@@ -226,11 +230,11 @@ program main
   call inputdata_close()
 
   call outputdata_close()
-  write(*,*) prefix,'DONE...'
+  !write(*,*) prefix,'DONE...'
 
   call mpi_finalize(ierr)
-  print*,'... mpi_finalize ierr: ',ierr
+  !print*,'... mpi_finalize ierr: ',ierr
 
-  print*,'END TEST.'
+  if (mpi_rank==0) print*,'END TEST.'
 
 end program main
