@@ -22,7 +22,7 @@ module dynamo_interface_mod
   use init_module, only: init_cons, init_fieldline
   use init_module, only: get_apex, calculate_m
 
-  use alloc_module, only: alloc_fieldline, alloc_fieldline_lite !, dealloc_fieldline
+  use alloc_module, only: alloc_fieldline, alloc_fieldline_lite, dealloc_fieldline
 
   use fieldline_module, only: F_p,F_s1,F_s2,F_r,M3_p,M1_s1,M2_s2,M3_r
   use fieldline_module, only: be3_s1,be3_s2,bmag_p,vmp_p,D1_s1,D1_s2,d1d1_s1,d1d2_s1,d1d2_s2
@@ -95,7 +95,6 @@ contains
        end if
     end if
 
-!    read_pot = set_hilat_pot_in
     read_fac = set_hilat_fac_in
 
     ! init mpi for 3D edynamo
@@ -145,12 +144,6 @@ contains
           stop ierror
        end if
 
-       call alloc_coord_fields(ierror)
-       if (ierror/=0) then
-          write(*,*) prefix, 'alloc_coord_fields failed'
-          stop ierror
-       end if
-
        glat_p  = -huge(1._rp)
        glon_p  = -huge(1._rp)
        glat_s1 = -huge(1._rp)
@@ -166,33 +159,6 @@ contains
             F_p,F_s1,F_s2,F_r,M3_p,M1_s1,M2_s2,M3_r)
 
     end if active_tasks
-
-  contains
-
-    subroutine alloc_coord_fields(ierr)
-      integer, intent(out) :: ierr
-
-      ierr = 0
-
-      allocate( glat_p(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1), stat=ierr)
-      if (ierr /= 0) return
-      allocate( glon_p(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1), stat=ierr)
-      if (ierr /= 0) return
-      allocate( glat_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1), stat=ierr)
-      if (ierr /= 0) return
-      allocate( glon_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1), stat=ierr)
-      if (ierr /= 0) return
-      allocate( glat_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1), stat=ierr)
-      if (ierr /= 0) return
-      allocate( glon_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1), stat=ierr)
-      if (ierr /= 0) return
-
-      allocate( glat_r(nhgt_fix_r,2,mlatd0:mlatd1,mlond0:mlond1), stat=ierr)
-      if (ierr /= 0) return
-      allocate( glon_r(nhgt_fix_r,2,mlatd0:mlatd1,mlond0:mlond1), stat=ierr)
-      if (ierr /= 0) return
-
-    end subroutine alloc_coord_fields
 
   end subroutine dynamo_init2
 
@@ -464,29 +430,11 @@ contains
 
   end subroutine dynamo_calc
 
-
   !------------------------------------------------------------------------------
   !------------------------------------------------------------------------------
   subroutine dynamo_final()
 
-!    call dealloc_fieldline()
-!!$
-!!$    if (associated(glat_p)) then
-!!$       deallocate(glat_p)
-!!$       nullify(glat_p)
-!!$    end if
-!!$    if (allocated(glon_p)) deallocate(glon_p)
-!!$    if (allocated(glat_s1)) deallocate(glat_s1)
-!!$    if (allocated(glon_s1)) deallocate(glon_s1)
-!!$    if (allocated(glat_s2)) deallocate(glat_s2)
-!!$    if (allocated(glon_s2)) deallocate(glon_s2)
-!!$    if (allocated(glat_r)) deallocate(glat_r)
-!!$    if (allocated(glon_r)) deallocate(glon_r)
-
-!!$    if (allocated(qdlat_p)) deallocate(qdlat_p)
-!!$    if (allocated(qdlat_s1)) deallocate(qdlat_s1)
-!!$    if (allocated(qdlat_s2)) deallocate(qdlat_s2)
-!!$    if (allocated(qdlat_r)) deallocate(qdlat_r)
+    call dealloc_fieldline()
 
   end subroutine dynamo_final
 

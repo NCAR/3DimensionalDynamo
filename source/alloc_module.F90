@@ -49,8 +49,6 @@ contains
 
     use mpi_module,only:mlond0,mlond1,mlatd0,mlatd1
     use cons_module, only: J3LB
-    !use fieldline_module, only: f3d, f3d_r, uvec
-    !use fieldline_module, only: glat_p, glon_p, sinI_p, D_p, F_p
     use fieldline_module
 
     integer, intent(out) :: ierr
@@ -129,4 +127,86 @@ contains
 
   endsubroutine alloc_fieldline
 !-----------------------------------------------------------------------
+
+  subroutine dealloc_fieldline
+    use fieldline_module
+
+    glat_p=>null()
+    glon_p=>null()
+    sinI_p=>null()
+    D_p=>null()
+    F_p=>null()
+    vmp_p=>null()
+    bmag_p=>null()
+    M3_p=>null()
+    
+    glat_s1=>null()
+    glon_s1=>null()
+    sinI_s1=>null()
+    D_s1=>null()
+    F_s1=>null()
+    vmp_s1=>null()
+    bmag_s1=>null()
+    be3_s1=>null()
+    M1_s1=>null()
+    d1d1_s1=>null()
+    d1d2_s1=>null()
+    d2d2_s1=>null()
+    
+    glat_s2=>null()
+    glon_s2=>null()
+    sinI_s2=>null()
+    D_s2=>null()
+    F_s2=>null()
+    vmp_s2=>null()
+    bmag_s2=>null()
+    be3_s2=>null()
+    M2_s2=>null()
+    d1d1_s2=>null()
+    d1d2_s2=>null()
+    d2d2_s2=>null()
+    
+    glat_r=>null()
+    glon_r=>null()
+    sinI_r=>null()
+    D_r=>null()
+    F_r=>null()
+    M3_r=>null()
+    
+    d1_s1=>null()
+    d2_s1=>null()
+    d3_s1=>null()
+    e1_s1=>null()
+    e2_s1=>null()
+    e3_s1=>null()
+    d1_s2=>null()
+    d2_s2=>null()
+    d3_s2=>null()
+    e1_s2=>null()
+    e2_s2=>null()
+    e3_s2=>null()
+    
+    if (allocated(f3d)) deallocate(f3d)
+    if (allocated(f3d_r)) deallocate(f3d_r)
+    if (allocated(uvec)) deallocate(uvec)
+
+    if (allocated(npts_p)) deallocate(npts_p)
+    if (allocated(npts_s1)) deallocate(npts_s1)
+    if (allocated(npts_r)) deallocate(npts_r)
+    if (allocated(npts_s2)) deallocate(npts_s2)
+    if (allocated(qdlat_p)) deallocate(qdlat_p)
+    if (allocated(qdlat_s1)) deallocate(qdlat_s1)
+    if (allocated(qdlat_s2)) deallocate(qdlat_s2)
+    if (allocated(qdlat_r)) deallocate(qdlat_r)
+    if (allocated(jmax_p)) deallocate(jmax_p)
+    if (allocated(jmax_s1)) deallocate(jmax_s1)
+    if (allocated(jmax_s2)) deallocate(jmax_s2)
+    if (allocated(size_p)) deallocate(size_p)
+    if (allocated(size_s1)) deallocate(size_s1)
+    if (allocated(size_s2)) deallocate(size_s2)
+    if (allocated(jmax_r)) deallocate(jmax_r)
+    if (allocated(size_r)) deallocate(size_r)
+    
+  end subroutine dealloc_fieldline
+  
 endmodule alloc_module

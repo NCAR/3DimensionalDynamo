@@ -7,7 +7,7 @@ module dist_solver_module
   use, intrinsic :: ieee_arithmetic, only: isnan => ieee_is_nan
 
   include 'netcdf.inc'
-  include 'superlu_dist_config.fh'
+!  include 'superlu_dist_config.fh'
 
   !max nonzeros per row (this does not incl the dense row at the pole)
   integer, parameter :: MAX_NNZ=12
