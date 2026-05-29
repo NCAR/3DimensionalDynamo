@@ -6,6 +6,7 @@ module outputdata_mod
   use inputdata_mod, only: nlons1, npflpts1, nlons2, npflpts2
   use inputdata_mod, only: nmaglat, nmaglon
   use inputdata_mod, only: nmaglat_s, nmaglon_s
+  use cons_module, only: ylatm_JT, pccolatrad
 
   use netcdf
 
@@ -29,7 +30,7 @@ contains
     character(len=*), intent(in) :: outfile
 
     integer :: infid, xtype, vid_in, ival
-    integer :: dimids_in(1), len
+    integer :: dimids_in(1), len, ylatm_vid, pccolat_vid, mlon_did, mlat_did, time_did, bij_vid
     integer, allocatable :: xint(:)
     real(r8), allocatable :: xdbl(:)
     integer :: ndims, nvars, vid, did,  dimsize, dimid,  varsize, varid, n, natts
@@ -53,6 +54,9 @@ contains
           call handle_error( nf90_inquire_dimension(infid, did, name=dimname, len=dimsize), 'ERROR: nf90_inquire_dimension ')
           if (dimname=='time') dimsize = NF90_UNLIMITED
           call handle_error(nf90_def_dim(outfid, dimname, dimsize, dimid), prefix//'nf90_def_dim '//dimname)
+          if (dimname=='maglat') mlat_did = dimid
+          if (dimname=='maglon') mlon_did = dimid
+          if (dimname=='time') time_did = dimid
        end do
 
        do vid = 1,nvars
@@ -62,7 +66,7 @@ contains
           allocate(dimids(ndims))
           call handle_error(nf90_inquire_variable(infid, vid, dimids=dimids), 'ERROR: nf90_inquire_variable dimids ')
 
-          call handle_error(nf90_def_var(outfid, varname, xtype, dimids, varid), prefix//'nf90_def_dim '//dimname)
+          call handle_error(nf90_def_var(outfid, varname, xtype, dimids, varid), prefix//'nf90_def_var '//varname)
 
           do n = 1, natts
              call handle_error(nf90_inq_attname( infid, vid, n, attname ), prefix//'nf90_inq_attname' )
@@ -70,6 +74,25 @@ contains
           enddo
           deallocate(dimids)
        end do
+
+       ! for other configuration parameters
+       call handle_error(nf90_def_var(outfid, 'Ylatm_JT', NF90_REAL, ylatm_vid), prefix//'nf90_def_var Ylatm_JT')
+       call handle_error(nf90_put_att(outfid, ylatm_vid, 'long_name', 'transition latitude where potential becomes symmetric/asymmetric'), &
+            prefix//'nf90_put_att ylatm_JT long_name')
+       call handle_error(nf90_put_att(outfid, ylatm_vid, 'units', 'radians'), &
+            prefix//'nf90_put_att ylatm_JT units')
+
+       call handle_error(nf90_def_var(outfid, 'pccolatrad', NF90_REAL, pccolat_vid), prefix//'nf90_def_var pccolatrad')
+       call handle_error(nf90_put_att(outfid, pccolat_vid, 'long_name', 'polar cap colatitude'), &
+            prefix//'nf90_put_att pccolatrad long_name')
+       call handle_error(nf90_put_att(outfid, pccolat_vid, 'units', 'radians'), &
+            prefix//'nf90_put_att pccolatrad units')
+
+       call handle_error(nf90_def_var(outfid, 'Bij', NF90_REAL, (/ mlon_did, mlat_did, time_did /), bij_vid), prefix//'nf90_def_var Bij')
+       call handle_error(nf90_put_att(outfid, bij_vid, 'long_name', 'field-aligned conductance (b) matrix'), &
+            prefix//'nf90_put_att Bij long_name')
+       call handle_error(nf90_put_att(outfid, bij_vid, 'units', 'Siemens [S]'), &
+            prefix//'nf90_put_att Bij units')
 
        call handle_error(nf90_enddef(outfid), prefix//' ERROR: nf90_enddef' )
 
@@ -104,6 +127,10 @@ contains
              end if
           end if
        end do
+
+       ! for other configuration parameters
+       call handle_error( nf90_put_var( outfid, ylatm_vid, ylatm_JT ), prefix//'nf90_put_var Ylatm_JT' )
+       call handle_error( nf90_put_var( outfid, pccolat_vid, pccolatrad ), prefix//'nf90_put_var pccolatrad' )
 
        call handle_error(nf90_close(infid), 'ERROR: nf90_close' )
 

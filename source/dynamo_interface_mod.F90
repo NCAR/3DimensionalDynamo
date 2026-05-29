@@ -171,7 +171,8 @@ contains
        ui_s1, vi_s1, wi_s1, ui_s2, vi_s2, wi_s2, &
        elec_pot_p, ped_cond_p, &
        efld1_s1, efld2_s1, efld1_s2, efld2_s2, &
-       ionvel1_s1, ionvel2_s1, ionvel1_s2, ionvel2_s2)
+       ionvel1_s1, ionvel2_s1, ionvel1_s2, ionvel2_s2, &
+       bij_out )
 
     ! args
     real(rp), intent(in) :: sigped_s1(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
@@ -211,6 +212,8 @@ contains
 
     real(rp), optional, intent(out) :: ionvel1_s2(2,mlat0:mlat1,mlon0:mlon1)
     real(rp), optional, intent(out) :: ionvel2_s2(2,mlat0:mlat1,mlon0:mlon1)
+
+    real(rp), optional, intent(out) :: bij_out(2,mlat0:mlat1,mlon0:mlon1)
 
     ! local vars
 
@@ -426,6 +429,11 @@ contains
     end if
     if (present(ionvel2_s2)) then
        ionvel2_s2(1:2,mlat0:mlat1,mlon0:mlon1) = ve2_s2(1:2,mlat0:mlat1,mlon0:mlon1)
+    end if
+
+    if (present(bij_out)) then
+       bij_out(1,mlat0:mlat1,mlon0:mlon1) = bij(mlat0:mlat1,mlon0:mlon1)
+       bij_out(2,mlat0:mlat1,mlon0:mlon1) = bij(mlat0:mlat1,mlon0:mlon1)
     end if
 
   end subroutine dynamo_calc

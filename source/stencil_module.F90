@@ -248,27 +248,20 @@ module stencil_module
 ! set field-aligned conductance (b) matrix
 
     use params_module,only:rho,rho_s
-    use cons_module,only:jlatm_JT
+    use cons_module,only: jlatm_JT, rho_pc
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(10,2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: coef_ns2
     real(kind=rp),dimension(mlatd0:mlatd1,mlond0:mlond1) :: bij
 
-    real(kind=rp),parameter :: &
-
-! b_mult is [|Phi|/Delta(Phi)]*(R/L)^2, where Phi is a characteristic potential value,
-! Delta(Phi) is a characteristic allowed interhemispheric potential difference,
-! R is Earth radius, and L is a characteristic N-S length scale for Phi.
-! It is assumed that b_mult is similar for middle and auroral latitudes.
-      b_mult = 1e3_rp, &
-
-! pccolatrad is the polar cap colatitude in radians, which for now is fixed.
-! But it can be made variable w.r.t. time and magnetic longitude in the future.
-      pccolatrad = 0.25_rp, & ! 14 degree
-      rho_pc = sin(pccolatrad)
-
     integer :: mlat0,mlat1,mlon0,mlon1,i,j
     real(kind=rp) :: fac3
+
+    ! b_mult is [|Phi|/Delta(Phi)]*(R/L)^2, where Phi is a characteristic potential value,
+    ! Delta(Phi) is a characteristic allowed interhemispheric potential difference,
+    ! R is Earth radius, and L is a characteristic N-S length scale for Phi.
+    ! It is assumed that b_mult is similar for middle and auroral latitudes.
+    real(kind=rp), parameter :: b_mult = 1.e3_rp
 
     mlat0 = mlatd0+1
     mlat1 = mlatd1-1

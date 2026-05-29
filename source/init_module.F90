@@ -104,9 +104,7 @@ module init_module
     use params_module,only:hgt_fix,hgt_fix_r,nmlat_h,nmlatS2_h,ylonm,ylonm_s
     use cons_module,only:h0,rtd
     use mpi_module,only:mlond0,mlond1,mlatd0,mlatd1
-    use fieldline_module !, only: qdlat_p, glat_p, glon_p, sini_p, D_p, F_p, vmp_p, &
-       !  bmag_p, npts_p, qdlat_s1, glat_s1, glon_s1, sini_s1, D_s1, F_s1, vmp_s1, &
-       !  bmag_s1, be3_s1, d1d1_s1, d1d2_s1, d2d2_s1, d1_s1, d2_s1
+    use fieldline_module
     use apex,only: apex_mall,apex_q2g
 
     real(kind=rp),parameter :: hr = h0*1e-3_rp

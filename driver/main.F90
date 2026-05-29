@@ -65,6 +65,7 @@ program main
   real(r8), allocatable :: fac_hl_p(:,:,:)
   real(r8), allocatable :: elec_pot_p(:,:,:)
   real(r8), allocatable :: ped_cond_p(:,:,:)
+  real(r8), allocatable :: bij_p(:,:,:)
 
   integer, parameter :: edyn3d_slu_refactor_int = 20 !superlu refactor interval
   real(r8),parameter :: edyn3d_slu_refactor_berr = 1e-12 !superlu refactor backward error
@@ -164,6 +165,9 @@ program main
   allocate( ped_cond_p(2,mlat0:mlat1,mlon0:mlon1) )
   ped_cond_p = 0._r8
 
+  allocate( bij_p(2,mlat0:mlat1,mlon0:mlon1) )
+  !bij_p = -huge(1._r8)
+
   do itime = 1,ntimes
      call inputdata_read_s1_fld( varid=un_s1_vid, time_ndx=itime, fld=un_s1 )
      call inputdata_read_s1_fld( varid=vn_s1_vid, time_ndx=itime, fld=vn_s1 )
@@ -195,7 +199,8 @@ program main
           ui_s1, vi_s1, wi_s1, ui_s2, vi_s2, wi_s2, &
           elec_pot_p, ped_cond_p, &
           efld1_s1, efld2_s1, efld1_s2, efld2_s2, &
-          ionvel1_s1, ionvel2_s1, ionvel1_s2, ionvel2_s2)
+          ionvel1_s1, ionvel2_s1, ionvel1_s2, ionvel2_s2, &
+          bij_out = bij_p)
 
      if (mpi_rank >= 0) then
         write(*,*) ' ... max min elec_pot_p: ',minval(elec_pot_p), maxval(elec_pot_p)
@@ -205,6 +210,7 @@ program main
      call outputdata_write_2dp_fld('HILAT_FAC',itime, fac_hl_p(:,mlat0:mlat1,mlon0:mlon1))
 
      call outputdata_write_2dp_fld('ELECPOTEN',itime, elec_pot_p)
+     call outputdata_write_2dp_fld('Bij',itime, bij_p)
 
      call outputdata_write_s1_fld('IonU_s1', itime, ui_s1)
      call outputdata_write_s2_fld('IonU_s2', itime, ui_s2)
