@@ -15,7 +15,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # ── MPI ───────────────────────────────────────────────────────────────────────
 find_package(MPI REQUIRED COMPONENTS Fortran)
 
-# ── NetCDF-C (ships a CMake config package in modern installations) ───────────
+# ── NetCDF ────────────────────────────────────────────────────────────────────
 # On NCAR/Derecho the $NETCDF env var points to the installation prefix;
 # on other systems set NETCDF_ROOT on the cmake command line:
 #   cmake -DNETCDF_ROOT=/path/to/netcdf ..
@@ -23,16 +23,38 @@ if(DEFINED ENV{NETCDF} AND NOT NETCDF_ROOT)
   set(NETCDF_ROOT "$ENV{NETCDF}" CACHE PATH "NetCDF installation root")
 endif()
 
-find_package(netCDF CONFIG
+# Try the CMake config package first (present in modern/Spack builds).
+# Fall back to find_library + find_path for older or system installs.
+find_package(netCDF CONFIG QUIET
   HINTS
     "${NETCDF_ROOT}/lib64/cmake"
     "${NETCDF_ROOT}/lib/cmake"
-    "${NETCDF_ROOT}"
-  REQUIRED)
+    "${NETCDF_ROOT}")
 
-# ── NetCDF-Fortran ──────────────────────────────────────────────────
-# netCDFConfig.cmake covers only the C library; find the Fortran binding
-# (libnetcdff) separately and wrap it in an imported target.
+if(netCDF_FOUND)
+  message(STATUS "Found netCDF via config package: ${netCDF_INSTALL_PREFIX}")
+else()
+  message(STATUS "netCDF config package not found -- falling back to find_library")
+
+  find_library(NETCDF_C_LIBRARY
+    NAMES netcdf
+    HINTS "${NETCDF_ROOT}/lib" "${NETCDF_ROOT}/lib64"
+    REQUIRED)
+  find_path(NETCDF_C_INCLUDE_DIR
+    NAMES netcdf.h
+    HINTS "${NETCDF_ROOT}/include"
+    REQUIRED)
+
+  add_library(netCDF::netcdf UNKNOWN IMPORTED)
+  set_target_properties(netCDF::netcdf PROPERTIES
+    IMPORTED_LOCATION             "${NETCDF_C_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${NETCDF_C_INCLUDE_DIR}")
+
+  message(STATUS "Found netCDF-C library: ${NETCDF_C_LIBRARY}")
+endif()
+
+# NetCDF-Fortran: always found separately (libnetcdff) since netCDFConfig.cmake
+# covers only the C library.
 find_library(NETCDF_Fortran_LIBRARY
   NAMES netcdff
   HINTS "${NETCDF_ROOT}/lib" "${NETCDF_ROOT}/lib64"
