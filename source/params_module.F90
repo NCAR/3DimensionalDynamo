@@ -30,4 +30,6 @@ module params_module
     hgt_fix, &    ! fixed heights - P,S1,S2
     hgt_fix_r     ! fixed heights - R
 
+  logical :: reproducible = .false.
+
 endmodule params_module

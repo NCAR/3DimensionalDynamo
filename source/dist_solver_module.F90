@@ -6,6 +6,8 @@ module dist_solver_module
   use dist_spmv_mod
   use, intrinsic :: ieee_arithmetic, only: isnan => ieee_is_nan
 
+  implicit none
+
   include 'netcdf.inc'
 !  include 'superlu_dist_config.fh'
 
@@ -80,7 +82,7 @@ module dist_solver_module
     real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(out) :: pot
 
     integer,parameter :: root = 0
-    integer :: nlonlat,i,j,ic,nnz, nnz_est
+    integer :: nlonlat,i,j,ic,nnz, nnz_est, isn
 
     !integer,dimension(:), allocatable :: rowptr
     !integer,dimension(:), allocatable :: colind
@@ -141,7 +143,7 @@ module dist_solver_module
     sol = 0.0
     pot_hl_f = 0.0
     g_colind = 0
-    g_row_ptr = 0
+    g_rowptr = 0
     g_values_csr = 0.0
     z = 0.0
 
@@ -1271,6 +1273,7 @@ module dist_solver_module
     use mpi_module,only: lat_size,lon_size,union_world,&
          task_csr_rowstarts, un_mpi_rank, &
          un_mpi_size
+    use params_module, only: reproducible
 
     integer,intent(in) :: n_loc,nnz_loc, n_global
     integer(kind=c_int),dimension(n_loc+1),intent(in) :: rowptr
@@ -1286,6 +1289,7 @@ module dist_solver_module
     ! for SuperLU sparse matrix solver
     integer,parameter :: nrhs = 1
     integer :: i, iopt, first_row, nprow, npcol
+    real(kind=c_double) :: scale
     logical :: A_changed
     !most superlu structures are module-level variables
 
@@ -1509,8 +1513,17 @@ module dist_solver_module
 
     ! result is in sol (already assigned by reference in pdgssvx)
 
+    if (reproducible) then
+       ! Round solution to 6 significant digits
+       do i = 1, n_loc
+          if (sol(i) /= 0.0_c_double) then
+             scale = 10.0_c_double ** (floor(log10(abs(sol(i)))) - 5)
+             sol(i) = anint(sol(i) / scale) * scale
+          end if
+       end do
+    end if
 
-  endfunction dist_solve_superlu
+  end function dist_solve_superlu
   !-----------------------------------------------------------------------
 
   subroutine finalize_superlu()

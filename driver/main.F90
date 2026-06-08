@@ -25,7 +25,8 @@ program main
 
   include 'mpif.h'
 
-  character(len=*), parameter :: infilepath = '../data/FX2000_f19_wcmx_3Dedyn_test01.cam.h2i.0001-01-01-07200.nc'
+!  character(len=*), parameter :: infilepath = '../data/FX2000_f19_wcmx_3Dedyn_test01.cam.h2i.0001-01-01-07200.nc'
+  character(len=*), parameter :: infilepath = '../data/FX2000_f19_wcmx_3Dedyn_serial_test01.cam.h1i.0001-01-01-00000.nc'
 
   real(r8), parameter :: geomag_year = 2000.50
 
@@ -95,7 +96,7 @@ program main
        edyn3d_nmlat_h=edyn3d_nmlat_h, edyn3d_nmlon=edyn3d_nmlon, edyn3d_nhgt=edyn3d_nhgt, &
        edyn3d_slu_refactor_int=edyn3d_slu_refactor_int,  &
        edyn3d_slu_refactor_berr=edyn3d_slu_refactor_berr, &
-       real_kind=r8 )
+       reprod_solution=.TRUE., real_kind=r8 )
 
   write(*,*) prefix,'3D Edyn grid params nmlat_h,nmlon,nhgt_fix: ',nmlat_h,nmlon,nhgt_fix
   write(*,*) prefix,'3D Edyn mpi_rank, mpi_size: ',mpi_rank,mpi_size

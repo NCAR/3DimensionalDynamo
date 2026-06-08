@@ -13,6 +13,7 @@ module dynamo_interface_mod
 
   use cons_module, only: read_fac
   use params_module, only: nmlat_h, nmlatS2_h, nmlon, nhgt_fix, nhgt_fix_r
+  use params_module, only: reproducible
 
   use mpi_module, only: mpi_init => init, setup_topology
   use mpi_module, only: un_mpi_rank, mpi_rank
@@ -75,14 +76,15 @@ contains
   !------------------------------------------------------------------------------
   subroutine dynamo_init1( set_hilat_pot_in, set_hilat_fac_in, &
        mpicom_atm, npes_edyn3D, edyn3d_nmlat_h, edyn3d_nmlon, edyn3d_nhgt, &
-       edyn3d_slu_refactor_int,  edyn3d_slu_refactor_berr,  real_kind )
+       edyn3d_slu_refactor_int,  edyn3d_slu_refactor_berr, reprod_solution, real_kind )
 
     logical, intent(in) :: set_hilat_pot_in, set_hilat_fac_in
     integer, intent(in) :: mpicom_atm, npes_edyn3D
     integer, intent(in) :: edyn3d_nmlat_h, edyn3d_nmlon, edyn3d_nhgt
     integer, intent(in) :: edyn3d_slu_refactor_int
     real(kind=rp), intent(in) :: edyn3d_slu_refactor_BERR
-    integer,optional, intent(in) :: real_kind
+    logical, optional, intent(in) :: reprod_solution
+    integer, optional, intent(in) :: real_kind
 
     integer :: ierror
     character(len=*), parameter :: prefix = 'dynamo_init1: '
@@ -124,6 +126,11 @@ contains
 
     ! set up MPI decomposition
     call setup_topology(nmlat_h,nmlon)
+
+    ! reproducible solution
+    if (present(reprod_solution)) then
+       reproducible = reprod_solution
+    end if
 
   end subroutine dynamo_init1
 
