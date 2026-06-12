@@ -562,7 +562,7 @@ subroutine mpi_sendnorth_mat(nnz_per_row, my_rowptr, my_values, my_cols, &
 
        partner_rowptr = 0
        partner_cols = 0
-       partner_values = 0.0
+       partner_values = 0.0_rp
 
        !recv from my partner
        call MPI_Irecv(partner_rowptr, my_recvgrid_size + 1, MPI_INTEGER, mpi_partner, &
@@ -1047,9 +1047,9 @@ endfunction all_gather_int
     tag = 34
 
     ! load to work array
-    sendbuf=0.0
-    recvbuf=0.0
-    varout=0.0
+    sendbuf=0.0_rp
+    recvbuf=0.0_rp
+    varout=0.0_rp
 
     ! gather data to 0 from proc_row 0
     if (mpi_rank == 0) then !root proc receives data
@@ -1611,4 +1611,4 @@ endfunction all_gather_int
   ! -----------------------------------------------------------------------
 
 
-endmodule mpi_module
+end module mpi_module

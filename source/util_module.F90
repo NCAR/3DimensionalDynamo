@@ -185,4 +185,4 @@ module util_module
 
   endfunction find
 !-----------------------------------------------------------------------
-endmodule util_module
+end module util_module

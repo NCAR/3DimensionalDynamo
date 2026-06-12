@@ -145,8 +145,8 @@ module init_module
             do k = 1,npts_p(j)
               qdlat = qdlat_p(k,isn,j)*rtd ! get quasi-dipole latitude
               qdlon = ylonm(i)*rtd ! get quasi-dipole longitude
-              if (qdlon < -180) qdlon = qdlon+360
-              if (qdlon > 180) qdlon = qdlon-360
+              if (qdlon < -180._rp) qdlon = qdlon+360._rp
+              if (qdlon > 180._rp) qdlon = qdlon-360._rp
               alt = hgt_fix(k)*1.e-3_rp ! convert height from [m] to [km]
 
               call apex_q2g(qdlat,qdlon,alt,gdlat,gdlon,ist)
@@ -167,8 +167,8 @@ module init_module
             do k = 1,npts_s1(j)
               qdlat = qdlat_s1(k,isn,j)*rtd ! get quasi-dipole latitude
               qdlon = ylonm_s(i)*rtd ! get quasi-dipole longitude
-              if (qdlon < -180) qdlon = qdlon+360
-              if (qdlon > 180) qdlon = qdlon-360
+              if (qdlon < -180._rp) qdlon = qdlon+360._rp
+              if (qdlon > 180._rp) qdlon = qdlon-360._rp
               alt = hgt_fix(k)/1000 ! convert height from [m] to [km]
 
               call apex_q2g(qdlat,qdlon,alt,gdlat,gdlon,ist)
@@ -184,8 +184,8 @@ module init_module
               D_s1(k,isn,j,i) = d
               F_s1(k,isn,j,i) = f
               vmp_s1(k,isn,j,i) = vmp ! magnitude potential Tm (diagnostic for ds calculation)
-              bmag_s1(k,isn,j,i) = bmag*1e-9_rp ! magnitude of magnetic field, convert from [nT] to [T]
-              be3_s1(k,isn,j,i) = be3*1e-9_rp ! B0=Be3*e3, convert from [nT] to [T]
+              bmag_s1(k,isn,j,i) = bmag*1.e-9_rp ! magnitude of magnetic field, convert from [nT] to [T]
+              be3_s1(k,isn,j,i) = be3*1.e-9_rp ! B0=Be3*e3, convert from [nT] to [T]
               d1d1_s1(k,isn,j,i) = dot_product(d1,d1)
               d1d2_s1(k,isn,j,i) = dot_product(d1,d2)
               d2d2_s1(k,isn,j,i) = dot_product(d2,d2)
@@ -202,9 +202,9 @@ module init_module
             do k = 1,npts_r(j)
               qdlat = qdlat_r(k,isn,j)*rtd ! get quasi-dipole latitude
               qdlon = ylonm(i)*rtd ! get quasi-dipole longitude
-              if (qdlon < -180) qdlon = qdlon+360
-              if (qdlon > 180) qdlon = qdlon-360
-              alt = hgt_fix_r(k)/1000 ! convert height from [m] to [km]
+              if (qdlon < -180._rp) qdlon = qdlon+360._rp
+              if (qdlon > 180._rp) qdlon = qdlon-360._rp
+              alt = hgt_fix_r(k)*1.e-3_rp ! convert height from [m] to [km]
 
               call apex_q2g(qdlat,qdlon,alt,gdlat,gdlon,ist)
               call apex_mall(gdlat,gdlon,alt,hr,b,bhat,bmag,si, &
@@ -226,9 +226,9 @@ module init_module
             do k = 1,npts_s2(j)
               qdlat = qdlat_s2(k,isn,j)*rtd ! get quasi-dipole latitude
               qdlon = ylonm(i)*rtd ! get quasi-dipole longitude
-              if (qdlon < -180) qdlon = qdlon+360
-              if (qdlon > 180) qdlon = qdlon-360
-              alt = hgt_fix(k)/1000 ! convert height from [m] to [km]
+              if (qdlon < -180._rp) qdlon = qdlon+360._rp
+              if (qdlon > 180._rp) qdlon = qdlon-360._rp
+              alt = hgt_fix(k)*1.e-3_rp ! convert height from [m] to [km]
 
               call apex_q2g(qdlat,qdlon,alt,gdlat,gdlon,ist)
               call apex_mall(gdlat,gdlon,alt,hr,b,bhat,bmag,si, &
@@ -243,8 +243,8 @@ module init_module
               D_s2(k,isn,j,i) = d
               F_s2(k,isn,j,i) = f
               vmp_s2(k,isn,j,i) = vmp ! magnitude potential Tm (diagnostic for ds calculation)
-              bmag_s2(k,isn,j,i) = bmag*1e-9_rp ! magnitude of magnetic field, convert from [nT] to [T]
-              be3_s2(k,isn,j,i) = be3*1e-9_rp ! B0=Be3*e3, convert from [nT] to [T]
+              bmag_s2(k,isn,j,i) = bmag*1.e-9_rp ! magnitude of magnetic field, convert from [nT] to [T]
+              be3_s2(k,isn,j,i) = be3*1.e-9_rp ! B0=Be3*e3, convert from [nT] to [T]
               d1d1_s2(k,isn,j,i) = dot_product(d1,d1)
               d1d2_s2(k,isn,j,i) = dot_product(d1,d2)
               d2d2_s2(k,isn,j,i) = dot_product(d2,d2)
@@ -302,12 +302,12 @@ module init_module
 
 ! set a1,a3 to 1 for equator and beyond
 ! (points before equator will be overwritten later)
-    a1 = 1
-    a3 = 1
+    a1 = 1._rp
+    a3 = 1._rp
 
     do concurrent (k = 1:nhgt_fix)
-      a1(k,1) = 0
-      a3(k,1) = 0
+      a1(k,1) = 0._rp
+      a3(k,1) = 0._rp
 
 ! normalized radii of the top and bottom of layer k
       rp1 = (hgt_fix_r(k+1)+re)/r0 ! r_k+0.5/R
@@ -317,42 +317,42 @@ module init_module
       do concurrent (j = 1:nmlat_h-k)
 
 ! first index of a1,a3 is j+1 because this corresponds to position j+0.5
-        a3(k,j+1) = 1-sqrt(max(1-rm1*rho_s(j)**2,0.0_rp))
+        a3(k,j+1) = 1._rp-sqrt(max(1._rp-rm1*rho_s(j)**2,0.0_rp))
 
 ! calculate the normalized radius within the layer, rbar,
 ! that gives the most accurate value of a1 when a1 is computed by the approximation below
 ! this calculation of rbar assumes the radius of field lines near the equator
 ! is parabolic with respect to magnetic latitude
-        ra = 1/rho_s(j)**2
+        ra = 1._rp/rho_s(j)**2
 
 ! prevent ra from getting too large to affect the numerical accuracy of rbar
 ! which rapidly asymptotes to 0.5*(rp1+rm1) as ra increases
-        if (ra > rp1+16*dr) ra = rp1+16*dr
+        if (ra > rp1+16._rp*dr) ra = rp1+16._rp*dr
 
 ! Eq (45') page 4c r*/R
         tmp = sqrt(max(ra-rm1,0.0_rp))**3-sqrt(max(ra-rp1,0.0_rp))**3
-        rbar = ra-(2*tmp/(3*dr))**2
+        rbar = ra-(2._rp*tmp/(3._rp*dr))**2
 
         tmp = sqrt(max(rbar,0.0_rp))*rho_s(j)
-        if (tmp > 1) tmp = 1
-        if (tmp < -1) tmp = -1
-        a1(k,j+1) = 2*asin(tmp)/pi ! Eq (47')
+        if (tmp > 1._rp) tmp = 1._rp
+        if (tmp < -1._rp) tmp = -1._rp
+        a1(k,j+1) = 2._rp*asin(tmp)/pi ! Eq (47')
       enddo
     enddo
 
 ! now do a3 for top level
     k = nhgt_fix_r
-    a3(k,1) = 0
+    a3(k,1) = 0._rp
     rm1 = (hgt_fix_r(k)+re)/r0
     do concurrent (j = 1:nmlat_h-k)
-      a3(k,j+1) = 1-sqrt(max(1-rm1*rho_s(j)**2,0.0_rp))
+      a3(k,j+1) = 1._rp-sqrt(max(1._rp-rm1*rho_s(j)**2,0.0_rp))
     enddo
 
 ! set m1f,m2f,m3f to 0 beyond equator
 ! (points before equator will be overwritten later)
-    m1f = 0
-    m2f = 0
-    m3f = 0
+    m1f = 0._rp
+    m2f = 0._rp
+    m3f = 0._rp
 
     do concurrent (k = 1:nhgt_fix)
 
@@ -368,13 +368,13 @@ module init_module
 
         m1f(k,j) = (hgt_fix(k)+re)**2*sqrt((hgt_fix(k)+re)/r0)*dr*pi/2*(a1(k,j+1)-a1(k,j))
 
-        tmp = sqrt(max(1-rm1*rho_s(j)**2,0.0_rp))-sqrt(max(1-rp1*rho_s(j)**2,0.0_rp))
-        m2f(k,j) = 2*dlonm*(hgt_fix(k)+re)**3/r0*tmp*sqrt(1-3*rho_s(j)**2/4)/rho_s(j)
+        tmp = sqrt(max(1._rp-rm1*rho_s(j)**2,0.0_rp))-sqrt(max(1._rp-rp1*rho_s(j)**2,0.0_rp))
+        m2f(k,j) = 2._rp*dlonm*(hgt_fix(k)+re)**3/r0*tmp*sqrt(1._rp-3._rp*rho_s(j)**2/4._rp)/rho_s(j)
       enddo
 
       j = nmlat_h-k+1
       m3f(k,j) = (hgt_fix_r(k)+re)**2*dlonm*(1-a3(k,j))
-      m1f(k,j) = (hgt_fix(k)+re)**2*sqrt((hgt_fix(k)+re)/r0)*dr*pi/2*(1-a1(k,j))
+      m1f(k,j) = (hgt_fix(k)+re)**2*sqrt((hgt_fix(k)+re)/r0)*dr*pi/2._rp*(1._rp-a1(k,j))
     enddo
 
 ! now do m3f for top level

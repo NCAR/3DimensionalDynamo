@@ -1,20 +1,20 @@
 module cons_module
 
-  use prec,only:rp
+  use prec,only: rp, sp
   use params_module,only:nmlat_h,nmlon
 
   implicit none
 
   real(kind=rp),parameter :: &
-    re = 6.37122e6_rp, &   ! earth radius (m)
-    pi = 4*atan(1.0_rp), &
-    rtd = 180/pi, &        ! radians to degrees
-    dtr = pi/180, &        ! degrees to radians
-    h0 = 8e4_rp, &         ! reference height (m) for dynamo calculations
+    re = 6.37122e6_rp, &      ! earth radius (m)
+    pi = 4._rp*atan(1._rp), &
+    rtd = 180._rp/pi, &       ! radians to degrees
+    dtr = pi/180._rp, &       ! degrees to radians
+    h0 = 8.e4_rp, &           ! reference height (m) for dynamo calculations
     r0 = re+h0, &
-    ylatm_JT = 45*dtr, &   ! transition latitude where potential becomes symmetric/asymmetric
-    phi_pol = 0, &         ! north pole potential
-    fill_value = huge(0.0) ! filling value for uninitialized fields
+    ylatm_JT = 45._rp*dtr, &  ! transition latitude where potential becomes symmetric/asymmetric
+    phi_pol = 0._rp, &        ! north pole potential
+    fill_value = huge(0.0_sp) ! filling value for uninitialized fields
 
   logical :: read_fac = .false. ! whether FAC is used at high latitude
 
@@ -39,4 +39,4 @@ module cons_module
   real(kind=rp),parameter :: pccolatrad = 0.25_rp ! 14 degrees
   real(kind=rp),parameter :: rho_pc = sin(pccolatrad)
 
-endmodule cons_module
+end module cons_module

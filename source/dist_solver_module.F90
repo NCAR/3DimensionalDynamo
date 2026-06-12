@@ -139,13 +139,13 @@ module dist_solver_module
     allocate(pot_hl_f(mygrid_size))
     allocate(sol(mygrid_size))
 
-    rhs = 0.0
-    sol = 0.0
-    pot_hl_f = 0.0
+    rhs = 0.0_rp
+    sol = 0.0_rp
+    pot_hl_f = 0.0_rp
     g_colind = 0
     g_rowptr = 0
-    g_values_csr = 0.0
-    z = 0.0
+    g_values_csr = 0.0_rp
+    z = 0.0_rp
 
     ! for now, split two hemispheres (keep halo pts)
     do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, ic = 1:10)
@@ -410,15 +410,15 @@ module dist_solver_module
 
        rowptr_s= 0
        colind_s = 0
-       values_s = 0.0
+       values_s = 0.0_rp
 
        rowptr_n = 0
        colind_n = 0
-       values_n = 0.0
+       values_n = 0.0_rp
 
        jcol1 = 0
-       nzval1 = 0.0
-       coef3_j1_buf = 0.0
+       nzval1 = 0.0_rp
+       coef3_j1_buf = 0.0_rp
 
 
        !The outer if statements to see if a proc owns rows in that region
@@ -1147,12 +1147,12 @@ module dist_solver_module
     real(kind=rp),dimension(my_recvgrid_size) :: recvbuf
 
 
-    rhs = 0.0
+    rhs = 0.0_rp
 
     if (mpi_rank >= 0) then !dynamo procs
 
-       rhs_n = 0.0
-       rhs_s = 0.0
+       rhs_n = 0.0_rp
+       rhs_s = 0.0_rp
 
        !first do j=1
        if (lat_rank == 0) then ! I own the pole regions (j=1) -this is the first row of procs
@@ -1617,13 +1617,13 @@ end function compute_pattern_hash
     real(kind=rp),dimension(my_sendgrid_size) :: sendbuf
     real(kind=rp),dimension(my_recvgrid_size) :: recvbuf
 
-    fout = 0.0
+    fout = 0.0_rp
 
     if (mpi_rank >=0) then !dynamo_procs
        ! Initialize arrays to avoid uninitialized values
-       fout_s = 0.0
-       fout_n = 0.0
-       sendbuf = 0.0
+       fout_s = 0.0_rp
+       fout_n = 0.0_rp
+       sendbuf = 0.0_rp
 
        if (mlat0<jlatm_JT) then !includes jlatm_JT
           ! from pole to jlatm_JT, two hemispheres are uncoupled
@@ -1766,7 +1766,7 @@ end function compute_pattern_hash
     real(kind=rp),dimension(my_sendgrid_size) :: recvbuf
 
     !output 3D array for north=2 & south=1
-    fout = 0.0
+    fout = 0.0_rp
 
     if (un_mpi_size == 1) then
        cnt = 0
@@ -1936,7 +1936,7 @@ end function compute_pattern_hash
     !now remove zeros
     keep = 1
     do i=1,len
-       if (array_r(i) ==  0.0) then
+       if (array_r(i) ==  0.0_rp) then
           keep(i) = 0
        endif
     enddo

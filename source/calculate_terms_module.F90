@@ -823,4 +823,4 @@ module calculate_terms_module
 
   endsubroutine calculate_current
 !-----------------------------------------------------------------------
-endmodule calculate_terms_module
+end module calculate_terms_module

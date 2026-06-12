@@ -17,7 +17,7 @@ module grid_module
 
     integer, intent(in) :: edyn3d_nmlat_h, edyn3d_nmlon, edyn3d_nhgt
 
-    real(kind=rp),parameter :: rekm = re*1e-3_rp, h0km = h0*1e-3_rp, r0km = r0*1e-3_rp, &
+    real(kind=rp),parameter :: rekm = re*1.e-3_rp, h0km = h0*1.e-3_rp, r0km = r0*1.e-3_rp, &
       d=10, f=15, h=10, yb=5, yc=18, d1=30, d2=50, d3=55, d4=75, d5=82, hs=6, dhdz=6
     integer :: i,j,k,jns
     real(kind=rp) :: lam1,lam2,lam3,lam4,lam5,hc,h1,rho1,b,c,e,g, &
@@ -153,16 +153,16 @@ module grid_module
 
 ! convert from km to m
     do k = 1,nhgt_fix
-      hgt_fix(k) = hgt_fix(k)*1000
+      hgt_fix(k) = hgt_fix(k)*1000._rp
     enddo
     do k = 1,nhgt_fix_r
-      hgt_fix_r(k) = hgt_fix_r(k)*1000
+      hgt_fix_r(k) = hgt_fix_r(k)*1000._rp
     enddo
     do j = 1,nmlat_h
-      ha(j) = ha(j)*1000
+      ha(j) = ha(j)*1000._rp
     enddo
     do j = 1,nmlatS2_h
-      ha_s(j) = ha_s(j)*1000
+      ha_s(j) = ha_s(j)*1000._rp
     enddo
 
 ! magnetic longitudes are equidistant
@@ -318,4 +318,4 @@ module grid_module
 
   endsubroutine generate_simplified_grid
 !-----------------------------------------------------------------------
-endmodule grid_module
+end module grid_module

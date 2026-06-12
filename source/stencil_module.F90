@@ -294,4 +294,4 @@ module stencil_module
 
   endfunction calculate_bij
 !-----------------------------------------------------------------------
-endmodule stencil_module
+end module stencil_module

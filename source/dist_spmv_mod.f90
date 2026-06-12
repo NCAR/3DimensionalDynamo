@@ -279,8 +279,8 @@ contains
 
     ! Zero output and buffersx
     y_local = 0.0d0
-    halo%sendbuf = 0.0
-    halo%recvbuf = 0.0
+    halo%sendbuf = 0.0d0
+    halo%recvbuf = 0.0d0
 
     
     ! Build send buffer: extract x values for halo_cols, packed in send_order

@@ -32,4 +32,4 @@ module params_module
 
   logical :: reproducible = .false.
 
-endmodule params_module
+end module params_module
