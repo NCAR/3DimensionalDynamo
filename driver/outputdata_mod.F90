@@ -1,12 +1,12 @@
 module outputdata_mod
-  use iso_fortran_env, only: r8=>real64 ! double precision
+  use iso_fortran_env, only: r8=>real64, sp=>real32 ! double precision, single precision
   use mpi_module, only: mpi_rank
   use mpi_module, only: mlat0, mlat1, mlon0, mlon1
   use params_module, only: nhgt_fix, nmlatS2_h, nmlat_T1, nmlat_T2
   use inputdata_mod, only: nlons1, npflpts1, nlons2, npflpts2
   use inputdata_mod, only: nmaglat, nmaglon
   use inputdata_mod, only: nmaglat_s, nmaglon_s
-  use cons_module, only: ylatm_JT, pccolatrad
+  use cons_module, only: ylatm_JT, pccolatrad, fill_value
 
   use netcdf
 
@@ -31,6 +31,7 @@ contains
 
     integer :: infid, xtype, vid_in, ival
     integer :: dimids_in(1), len, ylatm_vid, pccolat_vid, mlon_did, mlat_did, time_did, bij_vid
+    integer :: pflpts1_did, pflpts2_did, lons1_did, lons2_did, I1_s1_vid, I2_s2_vid, Jr_p_vid
     integer, allocatable :: xint(:)
     real(r8), allocatable :: xdbl(:)
     integer :: ndims, nvars, vid, did,  dimsize, dimid,  varsize, varid, n, natts
@@ -56,6 +57,10 @@ contains
           call handle_error(nf90_def_dim(outfid, dimname, dimsize, dimid), prefix//'nf90_def_dim '//dimname)
           if (dimname=='maglat') mlat_did = dimid
           if (dimname=='maglon') mlon_did = dimid
+          if (dimname=='lon_s1') lons1_did = dimid
+          if (dimname=='lon_s2') lons2_did = dimid
+          if (dimname=='pflpts1') pflpts1_did = dimid
+          if (dimname=='pflpts2') pflpts2_did = dimid
           if (dimname=='time') time_did = dimid
        end do
 
@@ -93,6 +98,24 @@ contains
             prefix//'nf90_put_att Bij long_name')
        call handle_error(nf90_put_att(outfid, bij_vid, 'units', 'Siemens [S]'), &
             prefix//'nf90_put_att Bij units')
+
+       call handle_error(nf90_def_var(outfid, 'I1_s1', NF90_REAL, (/ lons1_did, pflpts1_did, time_did /), I1_s1_vid), prefix//'nf90_def_var I1_s1_vid')
+       call handle_error(nf90_put_att(outfid, I1_s1_vid, 'long_name', 'height-integrated current, magnetic eastward (direction-1) component, S1 grid'), &
+            prefix//'nf90_put_att I1_s1 long_name')
+       call handle_error(nf90_put_att(outfid, I1_s1_vid, 'units', 'Amps'), prefix//'nf90_put_att I1_s1 units')
+       call handle_error(nf90_put_att(outfid, I1_s1_vid, '_FillValue', real(fill_value,kind=sp)), prefix//'nf90_put_att I1_s1 _FillValue')
+
+       call handle_error(nf90_def_var(outfid, 'I2_s2', NF90_REAL, (/ lons2_did, pflpts2_did, time_did /), I2_s2_vid), prefix//'nf90_def_var I2_s2_vid')
+       call handle_error(nf90_put_att(outfid, I2_s2_vid, 'long_name', 'height-integrated current, magnetic meridional (direction-2) component, S2 grid'), &
+            prefix//'nf90_put_att I2_s2 long_name')
+       call handle_error(nf90_put_att(outfid, I2_s2_vid, 'units', 'Amps'), prefix//'nf90_put_att I2_s2 units')
+       call handle_error(nf90_put_att(outfid, I2_s2_vid, '_FillValue', real(fill_value,kind=sp)), &
+            prefix//'nf90_put_att I2_s2 _FillValue')
+
+       call handle_error(nf90_def_var(outfid, 'Jr_p', NF90_REAL, (/ lons2_did, pflpts1_did, time_did /), Jr_p_vid), prefix//'nf90_def_var Jr_p_vid')
+       call handle_error(nf90_put_att(outfid, Jr_p_vid, 'long_name', 'radial (vertical) current density, P grid'),  prefix//'nf90_put_att Jr_p long_name')
+       call handle_error(nf90_put_att(outfid, Jr_p_vid, 'units', 'Amps m-2'), prefix//'nf90_put_att Jr_p units')
+       call handle_error(nf90_put_att(outfid, Jr_p_vid, '_FillValue', real(fill_value,kind=sp)), prefix//'nf90_put_att Jr_p _FillValue')
 
        call handle_error(nf90_enddef(outfid), prefix//' ERROR: nf90_enddef' )
 

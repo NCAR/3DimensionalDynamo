@@ -67,6 +67,9 @@ program main
   real(r8), allocatable :: elec_pot_p(:,:,:)
   real(r8), allocatable :: ped_cond_p(:,:,:)
   real(r8), allocatable :: bij_p(:,:,:)
+  real(r8), allocatable :: I1_s1(:,:,:,:)
+  real(r8), allocatable :: I2_s2(:,:,:,:)
+  real(r8), allocatable :: Jr_p(:,:,:,:)
 
   integer, parameter :: edyn3d_slu_refactor_int = 20 !superlu refactor interval
   real(r8),parameter :: edyn3d_slu_refactor_berr = 1e-12 !superlu refactor backward error
@@ -169,6 +172,10 @@ program main
   allocate( bij_p(2,mlat0:mlat1,mlon0:mlon1) )
   !bij_p = -huge(1._r8)
 
+  allocate( I1_s1(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
+  allocate( I2_s2(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
+  allocate( Jr_p(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
+
   do itime = 1,ntimes
      call inputdata_read_s1_fld( varid=un_s1_vid, time_ndx=itime, fld=un_s1 )
      call inputdata_read_s1_fld( varid=vn_s1_vid, time_ndx=itime, fld=vn_s1 )
@@ -201,7 +208,8 @@ program main
           elec_pot_p, ped_cond_p, &
           efld1_s1, efld2_s1, efld1_s2, efld2_s2, &
           ionvel1_s1, ionvel2_s1, ionvel1_s2, ionvel2_s2, &
-          bij_out = bij_p)
+          bij_out = bij_p, &
+          I1_s1_out=I1_s1 ,I2_s2_out=I2_s2, Jr_p_out=Jr_p )
 
      if (mpi_rank >= 0) then
         write(*,*) ' ... max min elec_pot_p: ',minval(elec_pot_p), maxval(elec_pot_p)
@@ -229,6 +237,10 @@ program main
      call outputdata_write_2ds1_fld('Ve2s1', itime, ionvel2_s1)
      call outputdata_write_2ds2_fld('Ve1s2', itime, ionvel1_s2)
      call outputdata_write_2ds2_fld('Ve2s2', itime, ionvel2_s2)
+
+     call outputdata_write_s1_fld('I1_s1', itime, I1_s1)
+     call outputdata_write_s2_fld('I2_s2', itime, I2_s2)
+     call outputdata_write_s1_fld('Jr_p',  itime, Jr_p )
 
   end do
 

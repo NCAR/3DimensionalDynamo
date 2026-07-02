@@ -41,6 +41,7 @@ module dynamo_interface_mod
   use calculate_terms_module, only: calculate_n, calculate_je, calculate_s
   use calculate_terms_module, only: calculate_ed, calculate_ve, calculate_vxyz
   use calculate_terms_module, only: calculate_conductance !, balance_fac_hl
+  use calculate_terms_module, only: calculate_current
 
   use stencil_module, only: calculate_coef, calculate_coef_ns2, calculate_coef_ns
   use stencil_module, only: calculate_bij
@@ -179,7 +180,7 @@ contains
        elec_pot_p, ped_cond_p, &
        efld1_s1, efld2_s1, efld1_s2, efld2_s2, &
        ionvel1_s1, ionvel2_s1, ionvel1_s2, ionvel2_s2, &
-       bij_out )
+       bij_out, I1_s1_out,I2_s2_out,Jr_p_out )
 
     ! args
     real(rp), intent(in) :: sigped_s1(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
@@ -221,6 +222,9 @@ contains
     real(rp), optional, intent(out) :: ionvel2_s2(2,mlat0:mlat1,mlon0:mlon1)
 
     real(rp), optional, intent(out) :: bij_out(2,mlat0:mlat1,mlon0:mlon1)
+    real(rp), optional, intent(out) :: I1_s1_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
+    real(rp), optional, intent(out) :: I2_s2_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
+    real(rp), optional, intent(out) :: Jr_p_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
 
     ! local vars
 
@@ -281,6 +285,12 @@ contains
     real(rp) :: vx_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: vy_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: vz_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+
+    real(rp) :: I1_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: I2_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: Jr_p(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: I3_r(nhgt_fix_r,2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: Jr_r(nhgt_fix_r,2,mlatd0:mlatd1,mlond0:mlond1)
 
     real(rp) :: fac_hl_loc(2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp), parameter :: thres = 0.5_rp
@@ -398,6 +408,15 @@ contains
             ve1_s1,ve2_s1,e1_s1,e2_s1, &
             ve1_s2,ve2_s2,e1_s2,e2_s2, &
             vx_s1,vy_s1,vz_s1,vx_s2,vy_s2,vz_s2)
+
+       ! calc currents diagnostics
+       call calculate_current( &
+            mlatd0,mlatd1,mlond0,mlond1, &
+            npts_p,npts_s1,npts_s2,npts_r, &
+            pot_p,M3_p,M1_s1,N1p_s1,N1h_s1,Je1D_s1, &
+            M2_s2,N2p_s2,N2h_s2,Je2D_s2,M3_r, &
+            I1_s1,I2_s2,I3_r,Jr_p,Jr_r)
+
     end if
 
     ui_s1(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = vx_s1(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
@@ -407,6 +426,19 @@ contains
     ui_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = vx_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
     vi_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = vy_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
     wi_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = vz_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
+
+    if (present(I1_s1_out)) then
+       I1_s1_out(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = &
+           I1_s1(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
+    end if
+    if (present(I2_s2_out)) then
+       I2_s2_out(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = &
+           I2_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
+    end if
+    if (present(Jr_p_out)) then
+       Jr_p_out(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = &
+           Jr_p(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
+    end if
 
     if (present(elec_pot_p)) then
        elec_pot_p(1:2,mlat0:mlat1,mlon0:mlon1) = pot_p(1:2,mlat0:mlat1,mlon0:mlon1)
