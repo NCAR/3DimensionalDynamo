@@ -180,7 +180,8 @@ contains
        elec_pot_p, ped_cond_p, &
        efld1_s1, efld2_s1, efld1_s2, efld2_s2, &
        ionvel1_s1, ionvel2_s1, ionvel1_s2, ionvel2_s2, &
-       bij_out, I1_s1_out,I2_s2_out,Jr_p_out )
+       bij_out, I1_s1_out,I2_s2_out, J1_s1_out,J2_s2_out, Jr_p_out, &
+       M1_s1_out, M2_s2_out, M3_p_out)
 
     ! args
     real(rp), intent(in) :: sigped_s1(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
@@ -224,7 +225,12 @@ contains
     real(rp), optional, intent(out) :: bij_out(2,mlat0:mlat1,mlon0:mlon1)
     real(rp), optional, intent(out) :: I1_s1_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
     real(rp), optional, intent(out) :: I2_s2_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
+    real(rp), optional, intent(out) :: J1_s1_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
+    real(rp), optional, intent(out) :: J2_s2_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
     real(rp), optional, intent(out) :: Jr_p_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
+    real(rp), optional, intent(out) :: M1_s1_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
+    real(rp), optional, intent(out) :: M2_s2_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
+    real(rp), optional, intent(out) :: M3_p_out(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1)
 
     ! local vars
 
@@ -262,7 +268,6 @@ contains
     real(rp) :: bij(mlatd0:mlatd1,mlond0:mlond1)
 
     real(rp) :: pot_p(2,mlatd0:mlatd1,mlond0:mlond1)
-    real(rp) :: zigP_p(2,mlatd0:mlatd1,mlond0:mlond1)
 
     real(rp) :: zigP_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: zigH_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
@@ -435,9 +440,31 @@ contains
        I2_s2_out(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = &
            I2_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
     end if
+    if (present(J1_s1_out) .and. mpi_rank>=0) then
+       J1_s1_out(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = &
+           I1_s1(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) / &
+           M1_s1(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
+    end if
+    if (present(J2_s2_out) .and. mpi_rank>=0) then
+       J2_s2_out(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = &
+           I2_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) / &
+           M2_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
+    end if
     if (present(Jr_p_out)) then
        Jr_p_out(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = &
            Jr_p(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
+    end if
+    if (present(M1_s1_out) .and. mpi_rank>=0) then
+       M1_s1_out(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = &
+           M1_s1(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
+    end if
+    if (present(M2_s2_out) .and. mpi_rank>=0) then
+       M2_s2_out(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = &
+           M2_s2(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
+    end if
+    if (present(M3_p_out) .and. mpi_rank>=0) then
+       M3_p_out(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1) = &
+           M3_p(1:nhgt_fix,1:2,mlat0:mlat1,mlon0:mlon1)
     end if
 
     if (present(elec_pot_p)) then

@@ -32,6 +32,7 @@ contains
     integer :: infid, xtype, vid_in, ival
     integer :: dimids_in(1), len, ylatm_vid, pccolat_vid, mlon_did, mlat_did, time_did, bij_vid
     integer :: pflpts1_did, pflpts2_did, lons1_did, lons2_did, I1_s1_vid, I2_s2_vid, Jr_p_vid
+    integer :: J1_s1_vid, J2_s2_vid, M1_s1_vid, M2_s2_vid, M3_p_vid
     integer, allocatable :: xint(:)
     real(r8), allocatable :: xdbl(:)
     integer :: ndims, nvars, vid, did,  dimsize, dimid,  varsize, varid, n, natts
@@ -112,10 +113,45 @@ contains
        call handle_error(nf90_put_att(outfid, I2_s2_vid, '_FillValue', real(fill_value,kind=sp)), &
             prefix//'nf90_put_att I2_s2 _FillValue')
 
+
+       call handle_error(nf90_def_var(outfid, 'J1_s1', NF90_REAL, (/ lons1_did, pflpts1_did, time_did /), J1_s1_vid), prefix//'nf90_def_var J1_s1_vid')
+       call handle_error(nf90_put_att(outfid, J1_s1_vid, 'long_name', 'current density, magnetic eastward (direction-1) component, S1 grid'), &
+            prefix//'nf90_put_att J1_s1 long_name')
+       call handle_error(nf90_put_att(outfid, J1_s1_vid, 'units', 'Amps m-2'), prefix//'nf90_put_att J1_s1 units')
+       call handle_error(nf90_put_att(outfid, J1_s1_vid, '_FillValue', real(fill_value,kind=sp)), prefix//'nf90_put_att J1_s1 _FillValue')
+
+       call handle_error(nf90_def_var(outfid, 'J2_s2', NF90_REAL, (/ lons2_did, pflpts2_did, time_did /), J2_s2_vid), prefix//'nf90_def_var J2_s2_vid')
+       call handle_error(nf90_put_att(outfid, J2_s2_vid, 'long_name', 'current density, magnetic meridional (direction-2) component, S2 grid'), &
+            prefix//'nf90_put_att J2_s2 long_name')
+       call handle_error(nf90_put_att(outfid, J2_s2_vid, 'units', 'Amps m-2'), prefix//'nf90_put_att J2_s2 units')
+       call handle_error(nf90_put_att(outfid, J2_s2_vid, '_FillValue', real(fill_value,kind=sp)), &
+            prefix//'nf90_put_att J2_s2 _FillValue')
+
        call handle_error(nf90_def_var(outfid, 'Jr_p', NF90_REAL, (/ lons2_did, pflpts1_did, time_did /), Jr_p_vid), prefix//'nf90_def_var Jr_p_vid')
        call handle_error(nf90_put_att(outfid, Jr_p_vid, 'long_name', 'radial (vertical) current density, P grid'),  prefix//'nf90_put_att Jr_p long_name')
        call handle_error(nf90_put_att(outfid, Jr_p_vid, 'units', 'Amps m-2'), prefix//'nf90_put_att Jr_p units')
        call handle_error(nf90_put_att(outfid, Jr_p_vid, '_FillValue', real(fill_value,kind=sp)), prefix//'nf90_put_att Jr_p _FillValue')
+
+
+
+       call handle_error(nf90_def_var(outfid, 'M1_s1', NF90_REAL, (/ lons1_did, pflpts1_did, time_did /), M1_s1_vid), prefix//'nf90_def_var M1_s1_vid')
+       call handle_error(nf90_put_att(outfid, M1_s1_vid, 'long_name', 'geometric cross-sectional area factor, magnetic eastward (direction-1) component, S1 grid'), &
+            prefix//'nf90_put_att M1_s1 long_name')
+       call handle_error(nf90_put_att(outfid, M1_s1_vid, 'units', 'm2'), prefix//'nf90_put_att M1_s1 units')
+       call handle_error(nf90_put_att(outfid, M1_s1_vid, '_FillValue', real(fill_value,kind=sp)), prefix//'nf90_put_att M1_s1 _FillValue')
+
+       call handle_error(nf90_def_var(outfid, 'M2_s2', NF90_REAL, (/ lons2_did, pflpts2_did, time_did /), M2_s2_vid), prefix//'nf90_def_var M2_s2_vid')
+       call handle_error(nf90_put_att(outfid, M2_s2_vid, 'long_name', 'geometric cross-sectional area factor, magnetic meridional (direction-2) component, S2 grid'), &
+            prefix//'nf90_put_att M2_s2 long_name')
+       call handle_error(nf90_put_att(outfid, M2_s2_vid, 'units', 'm2'), prefix//'nf90_put_att M2_s2 units')
+       call handle_error(nf90_put_att(outfid, M2_s2_vid, '_FillValue', real(fill_value,kind=sp)), &
+            prefix//'nf90_put_att M2_s2 _FillValue')
+
+       call handle_error(nf90_def_var(outfid, 'M3_p', NF90_REAL, (/ lons2_did, pflpts1_did, time_did /), M3_p_vid), prefix//'nf90_def_var M3_p_vid')
+       call handle_error(nf90_put_att(outfid, M3_p_vid, 'long_name', 'geometric cross-sectional area factor, radial (vertical, direction-3) component, P grid'),  prefix//'nf90_put_att M3_p long_name')
+       call handle_error(nf90_put_att(outfid, M3_p_vid, 'units', 'm2'), prefix//'nf90_put_att M3_p units')
+       call handle_error(nf90_put_att(outfid, M3_p_vid, '_FillValue', real(fill_value,kind=sp)), prefix//'nf90_put_att M3_p _FillValue')
+
 
        call handle_error(nf90_enddef(outfid), prefix//' ERROR: nf90_enddef' )
 

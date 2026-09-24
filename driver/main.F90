@@ -69,7 +69,12 @@ program main
   real(r8), allocatable :: bij_p(:,:,:)
   real(r8), allocatable :: I1_s1(:,:,:,:)
   real(r8), allocatable :: I2_s2(:,:,:,:)
+  real(r8), allocatable :: J1_s1(:,:,:,:)
+  real(r8), allocatable :: J2_s2(:,:,:,:)
   real(r8), allocatable :: Jr_p(:,:,:,:)
+  real(r8), allocatable :: M1_s1(:,:,:,:)
+  real(r8), allocatable :: M2_s2(:,:,:,:)
+  real(r8), allocatable :: M3_p(:,:,:,:)
 
   integer, parameter :: edyn3d_slu_refactor_int = 20 !superlu refactor interval
   real(r8),parameter :: edyn3d_slu_refactor_berr = 1e-12 !superlu refactor backward error
@@ -174,7 +179,12 @@ program main
 
   allocate( I1_s1(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
   allocate( I2_s2(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
+  allocate( J1_s1(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
+  allocate( J2_s2(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
   allocate( Jr_p(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
+  allocate( M1_s1(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
+  allocate( M2_s2(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
+  allocate( M3_p(nhgt_fix,2,mlat0:mlat1,mlon0:mlon1))
 
   do itime = 1,ntimes
      call inputdata_read_s1_fld( varid=un_s1_vid, time_ndx=itime, fld=un_s1 )
@@ -209,7 +219,8 @@ program main
           efld1_s1, efld2_s1, efld1_s2, efld2_s2, &
           ionvel1_s1, ionvel2_s1, ionvel1_s2, ionvel2_s2, &
           bij_out = bij_p, &
-          I1_s1_out=I1_s1 ,I2_s2_out=I2_s2, Jr_p_out=Jr_p )
+          I1_s1_out=I1_s1,I2_s2_out=I2_s2, J1_s1_out=J1_s1,J2_s2_out=J2_s2,Jr_p_out=Jr_p, &
+          M1_s1_out=M1_s1,M2_s2_out=M2_s2,M3_p_out=M3_p)
 
      if (mpi_rank >= 0) then
         write(*,*) ' ... max min elec_pot_p: ',minval(elec_pot_p), maxval(elec_pot_p)
@@ -240,7 +251,14 @@ program main
 
      call outputdata_write_s1_fld('I1_s1', itime, I1_s1)
      call outputdata_write_s2_fld('I2_s2', itime, I2_s2)
+
+     call outputdata_write_s1_fld('J1_s1', itime, J1_s1)
+     call outputdata_write_s2_fld('J2_s2', itime, J2_s2)
      call outputdata_write_s1_fld('Jr_p',  itime, Jr_p )
+
+     call outputdata_write_s1_fld('M1_s1', itime, M1_s1)
+     call outputdata_write_s2_fld('M2_s2', itime, M2_s2)
+     call outputdata_write_s1_fld('M3_p',  itime, M3_p )
 
   end do
 
