@@ -47,7 +47,7 @@ module solver_mod
     real(kind=rp) :: offset
     real(kind=rp),dimension(nlonlat) :: rhs,z,pot_hl_f,sol
     real(kind=rp),dimension(12*nlonlat) :: values_csr,values_csc
-    real(kind=rp),dimension(nmlat_h,nmlon) :: bij_full
+    real(kind=rp),dimension(nmlat_h,nmlon) :: bij_full,zero
     real(kind=rp),dimension(2,nmlat_h,nmlon) :: pot_hl_full,fac_hl_full,src_full
     real(kind=rp),dimension(9,2,nmlat_h,nmlon) :: coef_full
     real(kind=rp),dimension(2,nmlat_h,0:nmlon+1) :: fac_hl_2,pot_2
@@ -64,14 +64,6 @@ module solver_mod
     coef_full = gather_mag(coef(:,:,mlat0:mlat1,mlon0:mlon1),9,2,root)
 
     if (mpi_rank == root) then
-
-! construct LHS matrix in CSR format
-      call construct_lhs(bij_full,coef_full,rowptr,colind,values_csr)
-      nnz = rowptr(nlonlat+1)-1
-
-! RHS is vector (dense)
-      rhs = construct_rhs(src_full, &
-        coef_full(6,2,2,:)+coef_full(7,2,2,:)+coef_full(8,2,2,:))
 
 ! determine FAC forcing (dense)
 
@@ -91,6 +83,10 @@ module solver_mod
 ! A. Maute 2023/11/21: put the high latitude potential in X
 ! and then use LHS to calculate the RHS FAC
         pot_hl_f = ravel(pot_hl_full)
+
+! construct LHS matrix in CSR format with zero bij
+        zero = 0.0_rp
+        call construct_lhs(zero,coef_full,rowptr,colind,values_csr)
 
 ! z = matmul(lhs, pot_hl)
         z = 0
@@ -117,6 +113,14 @@ module solver_mod
 
 ! input is corrected fac_hl, pot_hl is not used
       if (read_fac) z = ravel(fac_hl_full)
+
+! construct LHS matrix in CSR format
+      call construct_lhs(bij_full,coef_full,rowptr,colind,values_csr)
+      nnz = rowptr(nlonlat+1)-1
+
+! RHS is vector (dense)
+      rhs = construct_rhs(src_full, &
+        coef_full(6,2,2,:)+coef_full(7,2,2,:)+coef_full(8,2,2,:))
 
 ! add FAC forcing to RHS
       do i = 1,nlonlat
