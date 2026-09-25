@@ -89,6 +89,7 @@ module dist_solver_module
     !real(kind=rp),dimension(:), allocatable :: values_csr
     real(kind=rp),dimension(10,mlatd0:mlatd1,mlond0:mlond1) :: coef_s
     real(kind=rp),dimension(10,mlatd0:mlatd1,mlond0:mlond1) :: coef_n
+    real(kind=rp),dimension(mlatd0:mlatd1,mlond0:mlond1) :: zero
 
     real(kind=rp),dimension(:), allocatable :: rhs,z,pot_hl_f,sol
 
@@ -153,21 +154,6 @@ module dist_solver_module
        coef_n(ic,j,i) = coef_ns(ic,2,j,i) !north (note: row = nmlat_T1-j+1)
     enddo
 
-    ! construct LHS matrix in Block CSR format
-    ! Note: rows are contiguous on each proc (for LHS matrix
-    ! and RHS)
-    call dist_construct_lhs(nnz_est,bij,coef_s(1:9,:,:),coef_n(1:9,:,:),g_rowptr,g_colind,g_values_csr)
-    !need nnz for solver
-    nnz = g_rowptr(mygrid_size+1)-1
-
-    ! RHS in Block format to match LHS
-    rhs = dist_construct_rhs(coef_s(10,:,:), coef_n(10,:,:))
-
-    !change matrix to 0-based indexing
-    !need matrix to be 0-based index for superlu and the matvec
-    g_colind=g_colind-1
-    g_rowptr=g_rowptr-1
-
     ! determine FAC forcing (dense)
     if (read_fac) then ! input is corrected fac_hl, pot_hl is not used
 
@@ -178,6 +164,14 @@ module dist_solver_module
        ! A. Maute 2023/11/21: put the high latitude potential in X
        ! and then use LHS to calculate the RHS FAC
        pot_hl_f = dist_flatten(pot_hl)
+
+       ! construct LHS matrix in Block CSR format with zero bij
+       zero = 0.0_rp
+       call dist_construct_lhs(nnz_est,zero,coef_s(1:9,:,:),coef_n(1:9,:,:),g_rowptr,g_colind,g_values_csr)
+
+       !change matrix to 0-based indexing for the matvec
+       g_colind=g_colind-1
+       g_rowptr=g_rowptr-1
 
        !Parallel matmult (uses union group)
        ! z = matmul(lhs, pot_hl_f)
@@ -220,6 +214,21 @@ module dist_solver_module
      endif !FAC
 
      !write(*,*) 'Dist_ls: Finished fac section'
+
+     ! construct LHS matrix in Block CSR format
+     ! Note: rows are contiguous on each proc (for LHS matrix
+     ! and RHS)
+     call dist_construct_lhs(nnz_est,bij,coef_s(1:9,:,:),coef_n(1:9,:,:),g_rowptr,g_colind,g_values_csr)
+     !need nnz for solver
+     nnz = g_rowptr(mygrid_size+1)-1
+
+     !change matrix to 0-based indexing
+     !need matrix to be 0-based index for superlu and the matvec
+     g_colind=g_colind-1
+     g_rowptr=g_rowptr-1
+
+     ! RHS in Block format to match LHS
+     rhs = dist_construct_rhs(coef_s(10,:,:), coef_n(10,:,:))
 
      ! add FAC forcing to RHS
      !(these are both set for contiguous rows already - all union procs own)
