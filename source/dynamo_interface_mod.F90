@@ -374,7 +374,9 @@ contains
           bij = 0._rp
        endif
 
-       fac_hl_p = 0._rp
+       if (.not.read_fac) then
+          fac_hl_p = 0._rp
+       end if
 
        pot_p = -huge(1._rp)
 

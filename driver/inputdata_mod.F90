@@ -34,6 +34,7 @@ module inputdata_mod
   integer, protected :: sigma_ped_s1_vid = -1
   integer, protected :: sigma_ped_s2_vid = -1
   integer, protected :: hilat_pot_vid = -1
+  integer, protected :: hilat_fac_vid = -1
 
   integer, protected :: edyn3d_nhgt = -huge(1)
   integer, protected :: edyn3d_nmlat_h = -huge(1)
@@ -83,7 +84,8 @@ contains
     call handle_error( nf90_inq_varid(ncid, 'sigma_hal_s2', sigma_hal_s2_vid), 'ERROR: nf90_inq_varid sigma_hal_s2' )
     call handle_error( nf90_inq_varid(ncid, 'sigma_ped_s1', sigma_ped_s1_vid), 'ERROR: nf90_inq_varid sigma_ped_s1' )
     call handle_error( nf90_inq_varid(ncid, 'sigma_ped_s2', sigma_ped_s2_vid), 'ERROR: nf90_inq_varid sigma_ped_s2' )
-    call handle_error( nf90_inq_varid(ncid, 'HILAT_POT', hilat_pot_vid), 'ERROR: nf90_inq_varid sigma_ped_s2' )
+    call handle_error( nf90_inq_varid(ncid, 'HILAT_POT', hilat_pot_vid), 'ERROR: nf90_inq_varid hilat_pot_vid' )
+    call handle_error( nf90_inq_varid(ncid, 'HILAT_FAC', hilat_fac_vid), 'ERROR: nf90_inq_varid hilat_fac_vid' )
 
     call handle_error( nf90_inq_varid(ncid, 'edyn3d_nhgt', vid), 'ERROR: nf90_inq_varid edyn3d_nhgt' )
     call handle_error( nf90_get_var(ncid, vid, edyn3d_nhgt), ' nf90_get_var error edyn3d_nhgt')
