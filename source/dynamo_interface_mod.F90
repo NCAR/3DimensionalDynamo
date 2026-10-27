@@ -40,7 +40,7 @@ module dynamo_interface_mod
 
   use calculate_terms_module, only: calculate_n, calculate_je, calculate_s
   use calculate_terms_module, only: calculate_ed, calculate_ve, calculate_vxyz
-  use calculate_terms_module, only: calculate_conductance !, balance_fac_hl
+  use calculate_terms_module, only: calculate_conductance, balance_fac_hl
   use calculate_terms_module, only: calculate_current
 
   use stencil_module, only: calculate_coef, calculate_coef_ns2, calculate_coef_ns
@@ -237,6 +237,7 @@ contains
     real(rp) :: tmp_ghost(4,nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
 
     real(rp) :: sigP_p(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
+    real(rp) :: zigP_p(2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: sigP_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: sigH_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: sigP_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
@@ -303,8 +304,16 @@ contains
 
     character(len=*), parameter :: subname = 'dynamo_calc'
 
+    fac_hl_loc = 0._rp
+
     !only active tasks + extras for solve
     if (mpi_rank >=0) then
+
+       ! exchange P ghost points
+       tmp_ghost(1,:,:,mlat0:mlat1,mlon0:mlon1) = sigped_p(:,:,mlat0:mlat1,mlon0:mlon1)
+       call sync_mlat_5d(tmp_ghost(1:1,:,:,:,mlon0:mlon1), 1, nhgt_fix, 2)
+       call sync_mlon_5d(tmp_ghost(1:1,:,:,:,:), 1, nhgt_fix, 2)
+       sigP_p(:,:,:,:) = tmp_ghost(1,:,:,:,:)
 
        ! exchange S1 ghost points
        tmp_ghost(1,:,:,mlat0:mlat1,mlon0:mlon1) = sigped_s1(:,:,mlat0:mlat1,mlon0:mlon1)
@@ -331,13 +340,18 @@ contains
        ntlU_s2(:,:,:,:) = tmp_ghost(3,:,:,:,:)
        ntlV_s2(:,:,:,:) = tmp_ghost(4,:,:,:,:)
 
-       ! calculate field-line integrated conductance - S1,S2
+       ! calculate field-line integrated conductance - S1,S2,P
        call calculate_conductance( &
             mlatd0,mlatd1,mlond0,mlond1, &
             npts_s1,npts_s2, &
             vmp_s1,bmag_s1,sigP_s1,sigH_s1, &
             vmp_s2,bmag_s2,sigP_s2,sigH_s2, &
-            zigP_s1,zigH_s1,zigP_s2,zigH_s2 )
+            zigP_s1,zigH_s1,zigP_s2,zigH_s2, &
+            npts_p,vmp_p,bmag_p,sigP_p,zigP_p )
+
+       if (present(ped_cond_p)) then
+          ped_cond_p(:,mlat0:mlat1,mlon0:mlon1) = zigP_p(:,mlat0:mlat1,mlon0:mlon1)
+       end if
 
        ! calculate N coefficients - S1,S2
        call calculate_n( &
@@ -374,8 +388,28 @@ contains
           bij = 0._rp
        endif
 
-       if (.not.read_fac) then
-          fac_hl_p = 0._rp
+       ! high-latitude FAC forcing (current per grid cell) when FAC is externally provided;
+       ! otherwise it is calculated from the high-latitude potential in dist_linear_system
+       if (read_fac) then
+
+          ! zero out FAC where there is no conductance
+          do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)
+             if (zigP_p(isn,j,i) < thres) fac_hl_p(isn,j,i) = 0._rp
+          enddo
+
+          fac_hl_p = balance_fac_hl( mlatd0,mlatd1,mlond0,mlond1, M3_p(1,:,:,:),fac_hl_p)
+
+          j = 1 ! no external FAC at poles
+          if (j>=mlatd0 .and. j<=mlatd1) then
+             do concurrent (i = mlond0:mlond1, isn = 1:2)
+                fac_hl_p(isn,j,i) = 0._rp
+             enddo
+          endif
+
+          do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)
+             fac_hl_loc(isn,j,i) = fac_hl_p(isn,j,i)*M3_p(1,isn,j,i)
+          enddo
+
        end if
 
        pot_p = -huge(1._rp)
@@ -389,10 +423,16 @@ contains
     !change), then call the following:
     !call dist_solver_force_refactor()
 
-    call dist_linear_system(mlatd0,mlatd1,mlond0,mlond1, bij,pot_hl_p,fac_hl_p,coef_ns,pot_p)
+    call dist_linear_system(mlatd0,mlatd1,mlond0,mlond1, bij,pot_hl_p,fac_hl_loc,coef_ns,pot_p)
 
     !just dynamo procs again
     if (mpi_rank >= 0) then
+
+       if (.not.read_fac) then ! pot_hl is input, fac_hl is output (A/m2)
+          do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=1 .and. j<=nmlat_h)
+             fac_hl_p(isn,j,i) = fac_hl_loc(isn,j,i)/M3_p(1,isn,j,i)
+          enddo
+       endif
 
        !call edyn3d_hist_mlonlat_out('HILAT_FAC',fac_hl_p(1:2,mlat0:mlat1,mlon0:mlon1))
        !call edyn3d_hist_mlonlat_out('ELECPOTEN', pot_p(1:2,mlat0:mlat1,mlon0:mlon1))

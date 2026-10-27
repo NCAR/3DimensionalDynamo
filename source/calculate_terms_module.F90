@@ -435,6 +435,74 @@ module calculate_terms_module
 
   endfunction correct_fac_hl
 !-----------------------------------------------------------------------
+  function balance_fac_hl(mlatd0,mlatd1,mlond0,mlond1, &
+    M3_p,fac_hl_in_p) result(fac_hl_out_p)
+! balance the input high latitude FAC to make sure it is zero
+! when integrated over the globe
+
+! this is called when direct FAC is read in (read_fac==.true.)
+! and needs to be corrected (direct FAC input may be unbalanced)
+! M3_p is only the bottom level
+
+    use params_module,only:nmlat_h
+    use mpi_module,only:reduce_sum_1d
+
+    integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
+    real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: &
+      M3_p,fac_hl_in_p
+    real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1) :: fac_hl_out_p
+
+    integer :: mlat0,mlat1,mlon0,mlon1,i,j,isn
+    real(kind=rp) :: downfac
+    real(kind=rp),dimension(2) :: subsum,fullsum
+
+    mlat0 = mlatd0+1
+    mlat1 = mlatd1-1
+    mlon0 = mlond0+1
+    mlon1 = mlond1-1
+    fac_hl_out_p = 0 ! not fill value
+
+! calculate the sum of upward and downward FACs
+    subsum = 0
+
+! exclude halo points to avoid double counting
+    do i = mlon0,mlon1
+      do j = mlat0,mlat1
+        if (j>=2 .and. j<=nmlat_h) then ! no pole
+          do isn = 1,2
+            if (fac_hl_in_p(isn,j,i) > 0) &
+              subsum(1) = subsum(1)+fac_hl_in_p(isn,j,i)*M3_p(isn,j,i)
+            if (fac_hl_in_p(isn,j,i) < 0) &
+              subsum(2) = subsum(2)-fac_hl_in_p(isn,j,i)*M3_p(isn,j,i)
+          enddo
+        endif
+      enddo
+    enddo
+
+    fullsum = reduce_sum_1d(subsum,2,-1)
+
+! if the integrated upward current is stronger than the downward current
+! scale the upward current down globally
+    if (fullsum(1) > fullsum(2)) then
+      downfac = fullsum(2)/fullsum(1)
+      do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=2 .and. j<=nmlat_h)
+        if (fac_hl_in_p(isn,j,i) > 0) fac_hl_out_p(isn,j,i) = fac_hl_in_p(isn,j,i)*downfac
+        if (fac_hl_in_p(isn,j,i) < 0) fac_hl_out_p(isn,j,i) = fac_hl_in_p(isn,j,i)
+      enddo
+
+! if the integrated upward current is weaker than the downward current
+! scale the downward current down globally
+! (if both sums are zero there is no FAC to balance -- output stays zero)
+    else if (fullsum(2) > 0) then
+      downfac = fullsum(1)/fullsum(2)
+      do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, isn = 1:2, j>=2 .and. j<=nmlat_h)
+        if (fac_hl_in_p(isn,j,i) < 0) fac_hl_out_p(isn,j,i) = fac_hl_in_p(isn,j,i)*downfac
+        if (fac_hl_in_p(isn,j,i) > 0) fac_hl_out_p(isn,j,i) = fac_hl_in_p(isn,j,i)
+      enddo
+    endif
+
+  endfunction balance_fac_hl
+!-----------------------------------------------------------------------
   pure subroutine calculate_ed(mlatd0,mlatd1,mlond0,mlond1, &
     pot_p,ed1_s1,ed2_s1,ed1_s2,ed2_s2)
 ! calculates electric field Ed1,Ed2 at S1 and S2 points

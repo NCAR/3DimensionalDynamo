@@ -33,6 +33,7 @@ module inputdata_mod
   integer, protected :: sigma_hal_s2_vid = -1
   integer, protected :: sigma_ped_s1_vid = -1
   integer, protected :: sigma_ped_s2_vid = -1
+  integer, protected :: sigma_ped_p_vid = -1
   integer, protected :: hilat_pot_vid = -1
   integer, protected :: hilat_fac_vid = -1
 
@@ -84,6 +85,7 @@ contains
     call handle_error( nf90_inq_varid(ncid, 'sigma_hal_s2', sigma_hal_s2_vid), 'ERROR: nf90_inq_varid sigma_hal_s2' )
     call handle_error( nf90_inq_varid(ncid, 'sigma_ped_s1', sigma_ped_s1_vid), 'ERROR: nf90_inq_varid sigma_ped_s1' )
     call handle_error( nf90_inq_varid(ncid, 'sigma_ped_s2', sigma_ped_s2_vid), 'ERROR: nf90_inq_varid sigma_ped_s2' )
+    call handle_error( nf90_inq_varid(ncid, 'sigma_ped_p', sigma_ped_p_vid), 'ERROR: nf90_inq_varid sigma_ped_p' )
     call handle_error( nf90_inq_varid(ncid, 'HILAT_POT', hilat_pot_vid), 'ERROR: nf90_inq_varid hilat_pot_vid' )
     call handle_error( nf90_inq_varid(ncid, 'HILAT_FAC', hilat_fac_vid), 'ERROR: nf90_inq_varid hilat_fac_vid' )
 

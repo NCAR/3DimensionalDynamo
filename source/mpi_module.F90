@@ -402,9 +402,9 @@ module mpi_module
 
        !write(*, *) 'AB: TOPO un_mpi_rank, mpi_rank, ex_mpi_rank, mlat0, mlat1, mlon0,mlon1',un_mpi_rank, mpi_rank, ex_mpi_rank, mlat0, mlat1, mlon0,mlon1
 
-       if (mpi_rank == 0) then
-          write(*,*) 'TOPO: lon_size (tasks), lat_size(tasks), mygrid_size::: ', lon_size, lat_size, mygrid_size
-       endif
+       !if (mpi_rank == 0) then
+       !   write(*,*) 'TOPO: lon_size (tasks), lat_size(tasks), mygrid_size::: ', lon_size, lat_size, mygrid_size
+       !endif
 
     else !completely non-active
        mygrid_size = 0
