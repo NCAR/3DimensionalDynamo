@@ -32,6 +32,7 @@ module solver_mod
     use params_mod,only:nmlat_h,nmlon
     use params_mod,only:read_pot,read_fac
     use mpi_mod,only:gather_mag,bcast,mpi_rank
+    use cons_mod,only:jlatm_JT
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(mlatd0:mlatd1,mlond0:mlond1),intent(in) :: bij
@@ -112,7 +113,19 @@ module solver_mod
       endif
 
 ! input is corrected fac_hl, pot_hl is not used
-      if (read_fac) z = ravel(fac_hl_full)
+      if (read_fac) then
+
+! Low latitudes (jlatm_JT equatorward) have one combined volume for both
+! hemispheres, so the FAC forcing there is the sum of the two hemispheres.
+! ravel uses only the southern entry in this region; without the sum the
+! northern FAC is dropped, leaving unbalanced forcing and a step in the
+! potential.
+
+        do concurrent (i = 1:nmlon, j = jlatm_JT:nmlat_h)
+          fac_hl_full(1,j,i) = fac_hl_full(1,j,i)+fac_hl_full(2,j,i)
+        enddo
+        z = ravel(fac_hl_full)
+      endif
 
 ! construct LHS matrix in CSR format
       call construct_lhs(bij_full,coef_full,rowptr,colind,values_csr)
