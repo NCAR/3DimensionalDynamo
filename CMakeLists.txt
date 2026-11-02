@@ -41,6 +41,10 @@ add_executable(
 
 target_link_libraries("${PROJECT_NAME}" PRIVATE MPI::MPI_Fortran superlu::superlu ${netcdf_lib})
 
+# Allow free-form source lines longer than 132 characters with gfortran
+target_compile_options("${PROJECT_NAME}" PRIVATE
+  $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-ffree-line-length-none>)
+
 # Using set_target_properties for each target is usually preferred
 set_target_properties(
   "${PROJECT_NAME}"
