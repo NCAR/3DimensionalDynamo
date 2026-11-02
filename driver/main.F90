@@ -7,7 +7,8 @@ program main
   use inputdata_mod, only: inputdata_read_s1_fld, inputdata_read_s2_fld, inputdata_read_2dp_fld
   use inputdata_mod, only: un_s1_vid, un_s2_vid, vn_s1_vid, vn_s2_vid
   use inputdata_mod, only: sigma_hal_s1_vid, sigma_hal_s2_vid, sigma_ped_s1_vid, sigma_ped_s2_vid
-  use inputdata_mod, only: hilat_pot_vid, edyn3d_nmlat_h, edyn3d_nmlon, edyn3d_nhgt
+  use inputdata_mod, only: sigma_ped_p_vid
+  use inputdata_mod, only: hilat_pot_vid, hilat_fac_vid, edyn3d_nmlat_h, edyn3d_nmlon, edyn3d_nhgt
   use mpi_mod, only: mpi_rank, mpi_size, lat_size, lon_size
   use params_mod,only: nmlat_h, nmlon, nhgt_fix, hgt_fix_r
   use indices_mod, only : indices_init
@@ -25,10 +26,13 @@ program main
 
   include 'mpif.h'
 
-  character(len=*), parameter :: infilepath = '../data/FX2000_f19_wcmx_3Dedyn_test01.cam.h2i.0001-01-01-07200.nc'
-!  character(len=*), parameter :: infilepath = '../data/FX2000_ne16pg3_wcmx_3Dedyn_test04.cam.h2i.0001-01-01-00000.nc'
+  character(len=*), parameter :: infilepath = '../data/FXHIST_wcmx_3Dedyn-dist_ne30pg3_2024maystorm_amie_test03.cam.h6i.2024-05-11-00000.nc'
 
-  real(r8), parameter :: geomag_year = 2000.50
+  real(r8), parameter :: geomag_year = 2024.50
+
+  ! high-latitude forcing: input potential or input field-aligned currents
+  logical, parameter :: hilat_pot_in = .false.
+  logical, parameter :: hilat_fac_in = .true.
 
   character(len=*), parameter :: prefix = '3D-Dynamamo test: '
 
@@ -83,8 +87,8 @@ program main
   write(*,*) prefix,'call dynamo_init1 ...'
   ! before apex init
   call dynamo_init1( &
-       set_hilat_pot_in=.true., &
-       set_hilat_fac_in=.false., &
+       set_hilat_pot_in=hilat_pot_in, &
+       set_hilat_fac_in=hilat_fac_in, &
        mpicom_atm=MPI_COMM_WORLD, npes_edyn3D=job_size, &
        edyn3d_nmlat_h=edyn3d_nmlat_h, edyn3d_nmlon=edyn3d_nmlon, edyn3d_nhgt=edyn3d_nhgt, &
        real_kind=r8 )
@@ -98,7 +102,7 @@ program main
   ! call mo_apex_init1( alts_in=hgt_fix_r*1.e-3_r8 ) ! m --> km
 
   write(*,*) prefix,'call APEX setup ...'
-  call apex_setup(date=2010.2_r8 ,altmax=maxval(hgt_fix_r*1.e-3_r8))
+  call apex_setup(date=geomag_year,altmax=maxval(hgt_fix_r*1.e-3_r8))
 
   write(*,*) prefix,'call dynamo_init2 ...'
   ! after apex init
@@ -166,7 +170,10 @@ program main
      call inputdata_read_s2_fld( varid=vn_s2_vid, time_ndx=itime, fld=vn_s2 )
      call inputdata_read_s2_fld( varid=sigma_hal_s2_vid, time_ndx=itime, fld=sigma_hal_s2 )
      call inputdata_read_s2_fld( varid=sigma_ped_s2_vid, time_ndx=itime, fld=sigma_ped_s2 )
-     call inputdata_read_2dp_fld(hilat_pot_vid, itime, pot_hl_p)
+     ! P points share the s1 field-line points (pflpts1)
+     call inputdata_read_s1_fld( varid=sigma_ped_p_vid, time_ndx=itime, fld=sigped_p )
+     if (hilat_pot_in) call inputdata_read_2dp_fld(hilat_pot_vid, itime, pot_hl_p)
+     if (hilat_fac_in) call inputdata_read_2dp_fld(hilat_fac_vid, itime, fac_hl_p)
 
      write(*,*) prefix,' ... itime:',itime,' maxval( sigma_ped_s2 ): ',maxval( sigma_ped_s2 )
 
@@ -178,6 +185,7 @@ program main
      call outputdata_write_s1_fld( varname='sigma_ped_s1', time_ndx=itime, fld=sigma_ped_s1 )
      call outputdata_write_s2_fld( varname='sigma_hal_s2', time_ndx=itime, fld=sigma_hal_s2 )
      call outputdata_write_s2_fld( varname='sigma_ped_s2', time_ndx=itime, fld=sigma_ped_s2 )
+     call outputdata_write_s1_fld( varname='sigma_ped_p', time_ndx=itime, fld=sigped_p )
 
      call dynamo_calc( &
           sigma_ped_s1, sigma_hal_s1, un_s1, vn_s1, &
