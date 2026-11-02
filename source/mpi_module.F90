@@ -1447,6 +1447,62 @@ endfunction all_gather_int
 
   endfunction reduce_sum_1d
 !-----------------------------------------------------------------------
+  function reduce_sum_points(fld, nf) result(total)
+! sum point contributions fld(:,isn,j,i) over the global P grid (no halo points)
+! if reproducible is set, the points are summed in a fixed global order
+! (i, then j, then isn) so the result does not depend on the decomposition
+
+    use params_module, only: nmlat_h, reproducible, nmlon_g => nmlon
+
+    integer, intent(in) :: nf
+    real(kind=rp), dimension(nf,2,mlat0:mlat1,mlon0:mlon1), intent(in) :: fld
+    real(kind=rp), dimension(nf) :: total
+
+    real(kind=rp), dimension(:,:,:,:), allocatable :: glb_sub, glb
+    integer :: i, j, isn
+#ifdef PARALLEL
+    integer :: ierr
+#endif
+
+    total = 0
+
+    if (.not. reproducible) then
+      do i = mlon0,mlon1
+        do j = mlat0,mlat1
+          do isn = 1,2
+            total = total+fld(:,isn,j,i)
+          enddo
+        enddo
+      enddo
+      total = reduce_sum_1d(total, nf, -1)
+      return
+    endif
+
+    allocate(glb_sub(nf,2,nmlat_h,nmlon_g), glb(nf,2,nmlat_h,nmlon_g))
+    glb_sub = 0
+    glb_sub(:,:,mlat0:mlat1,mlon0:mlon1) = fld
+
+#ifdef PARALLEL
+! each point is owned by exactly one task, so summing with zeros is exact
+    call MPI_Allreduce(glb_sub, glb, size(glb), mpi_rp, &
+      MPI_SUM, dynamo_world, ierr)
+    if (ierr /= MPI_SUCCESS) call handle_error('MPI_Allreduce', ierr)
+#else
+    glb = glb_sub
+#endif
+
+    do i = 1,nmlon_g
+      do j = 1,nmlat_h
+        do isn = 1,2
+          total = total+glb(:,isn,j,i)
+        enddo
+      enddo
+    enddo
+
+    deallocate(glb_sub, glb)
+
+  endfunction reduce_sum_points
+!-----------------------------------------------------------------------
   subroutine handle_error(funcname, errorcode)
 
 #ifdef PARALLEL

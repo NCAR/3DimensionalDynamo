@@ -45,6 +45,20 @@ module dist_solver_module
   integer(kind=c_int64_t), save :: g_pattern_hash = 0_c_int64_t
   logical, save :: pattern_initialized = .false.
 
+  ! for reproducible solutions the global matrix is gathered to union rank 0 and
+  ! solved there on a 1x1 superlu grid (the parallel triangular solves sum
+  ! contributions in message arrival order, which is not reproducible)
+  ! superlu keeps pointers to these arrays, so they must persist across solves
+  logical, save :: root_comm_created = .false.
+  integer, save :: root_comm
+  integer(kind=c_int),dimension(:), allocatable, save :: root_rowptr
+  integer(kind=c_int),dimension(:), allocatable, save :: root_colind
+  real(kind=c_double),dimension(:), allocatable, save :: root_values
+  ! the gathered rows are numbered by the decomposition (contiguous block per task),
+  ! so before the root solve they are renumbered to the single-task ordering;
+  ! root_perm(r) is the 0-based single-task row of gathered row r (root only)
+  integer,dimension(:), allocatable, save :: root_perm
+
   contains
 !-----------------------------------------------------------------------
   subroutine dist_linear_system(mlatd0,mlatd1,mlond0,mlond1, &
@@ -1288,6 +1302,244 @@ module dist_solver_module
     integer(kind=c_int),dimension(n_loc+1),intent(in) :: rowptr
     integer(kind=c_int),dimension(nnz_loc),intent(in) :: colind
     real(kind=c_double),dimension(nnz_loc),intent(in) :: values
+    real(kind=c_double),dimension(n_loc),intent(in) :: rhs
+    real(kind=c_double),dimension(n_loc) :: sol
+
+    if (reproducible .and. un_mpi_size > 1) then
+       sol = root_solve_superlu(n_global, n_loc, nnz_loc, rowptr, colind, values, rhs)
+    else
+       !i'll use the same layout as the dynamo, but double the lat for the extra procs
+       sol = superlu_solve(union_world, 2*lat_size, lon_size, task_csr_rowstarts(un_mpi_rank), &
+            n_global, n_loc, nnz_loc, rowptr, colind, values, rhs)
+    endif
+
+  end function dist_solve_superlu
+  !-----------------------------------------------------------------------
+
+  ! gather the global matrix and rhs to union rank 0, renumber them to the
+  ! single-task ordering, solve there on a 1x1 grid, and scatter the solution
+  ! back -- the result does not depend on message timing or on the number of tasks
+  function root_solve_superlu(n_global, n_loc, nnz_loc, rowptr, colind, values, rhs) result(sol)
+
+    use mpi
+    use mpi_module,only: union_world, un_mpi_rank, un_mpi_size
+
+    integer,intent(in) :: n_loc,nnz_loc, n_global
+    integer(kind=c_int),dimension(n_loc+1),intent(in) :: rowptr
+    integer(kind=c_int),dimension(nnz_loc),intent(in) :: colind
+    real(kind=c_double),dimension(nnz_loc),intent(in) :: values
+    real(kind=c_double),dimension(n_loc),intent(in) :: rhs
+    real(kind=c_double),dimension(n_loc) :: sol
+
+    integer :: ierr, color, r, p, k, k0, nk, nnz_global
+    integer,dimension(0:un_mpi_size-1) :: row_cnts, row_displs, nnz_cnts, nnz_displs
+    real(kind=c_double),dimension(:), allocatable :: rhs_global, sol_global, rhs_perm, sol_perm
+    ! gathered matrix in the decomposition ordering
+    integer(kind=c_int),dimension(:), allocatable :: gth_rowptr, gth_colind
+    real(kind=c_double),dimension(:), allocatable :: gth_values
+    integer,dimension(:), allocatable :: canon_loc, inv_perm
+
+    ! communicator containing only union rank 0 (created once)
+    if (.not. root_comm_created) then
+       color = MPI_UNDEFINED
+       if (un_mpi_rank == 0) color = 0
+       call MPI_Comm_split(union_world, color, 0, root_comm, ierr)
+       root_comm_created = .true.
+    endif
+
+    call MPI_Gather(n_loc, 1, MPI_INTEGER, row_cnts, 1, MPI_INTEGER, 0, union_world, ierr)
+    call MPI_Gather(nnz_loc, 1, MPI_INTEGER, nnz_cnts, 1, MPI_INTEGER, 0, union_world, ierr)
+
+    if (un_mpi_rank == 0) then
+       row_displs(0) = 0
+       do r = 1, un_mpi_size-1
+          row_displs(r) = row_displs(r-1) + row_cnts(r-1)
+       enddo
+    endif
+
+    ! single-task row numbers of the gathered rows (decomposition is fixed, so once)
+    if (.not. allocated(root_perm)) then
+       allocate(canon_loc(n_loc))
+       canon_loc = dist_canonical_rows()
+       if (un_mpi_rank == 0) then
+          allocate(root_perm(n_global))
+       else
+          allocate(root_perm(1))
+       endif
+       call MPI_Gatherv(canon_loc, n_loc, MPI_INTEGER, root_perm, row_cnts, row_displs, &
+            MPI_INTEGER, 0, union_world, ierr)
+       deallocate(canon_loc)
+       if (un_mpi_rank == 0) then
+          allocate(inv_perm(n_global))
+          inv_perm = -1
+          do r = 1, n_global
+             if (root_perm(r) >= 0 .and. root_perm(r) < n_global) inv_perm(root_perm(r)+1) = r
+          enddo
+          if (any(inv_perm < 0)) then
+             write(*,*) 'SuperLU ERROR: single-task row numbering is not a permutation'
+          endif
+          deallocate(inv_perm)
+       endif
+    endif
+
+    ! rows are contiguous on each proc, in rank order
+    nnz_global = 0
+    if (un_mpi_rank == 0) then
+       nnz_displs(0) = 0
+       do r = 1, un_mpi_size-1
+          nnz_displs(r) = nnz_displs(r-1) + nnz_cnts(r-1)
+       enddo
+       nnz_global = sum(nnz_cnts)
+       if (sum(row_cnts) /= n_global) then
+          write(*,*) 'SuperLU ERROR: gathered rows /= n_global ', sum(row_cnts), n_global
+       endif
+
+       ! only reallocate if the size changes (superlu then sees the change and refactors)
+       if (allocated(root_colind)) then
+          if (size(root_colind) /= nnz_global) deallocate(root_colind, root_values)
+       endif
+       if (.not. allocated(root_colind)) allocate(root_colind(nnz_global), root_values(nnz_global))
+       if (.not. allocated(root_rowptr)) allocate(root_rowptr(n_global+1))
+       allocate(rhs_global(n_global), sol_global(n_global))
+       allocate(gth_rowptr(n_global+1), gth_colind(nnz_global), gth_values(nnz_global))
+    else
+       allocate(rhs_global(1), sol_global(1))
+       allocate(gth_rowptr(1), gth_colind(1), gth_values(1))
+       if (.not. allocated(root_rowptr)) allocate(root_rowptr(1), root_colind(1), root_values(1))
+    endif
+
+    call MPI_Gatherv(values, nnz_loc, MPI_DOUBLE_PRECISION, gth_values, nnz_cnts, nnz_displs, &
+         MPI_DOUBLE_PRECISION, 0, union_world, ierr)
+    call MPI_Gatherv(colind, nnz_loc, MPI_INTEGER, gth_colind, nnz_cnts, nnz_displs, &
+         MPI_INTEGER, 0, union_world, ierr)
+    call MPI_Gatherv(rowptr, n_loc, MPI_INTEGER, gth_rowptr, row_cnts, row_displs, &
+         MPI_INTEGER, 0, union_world, ierr)
+    call MPI_Gatherv(rhs, n_loc, MPI_DOUBLE_PRECISION, rhs_global, row_cnts, row_displs, &
+         MPI_DOUBLE_PRECISION, 0, union_world, ierr)
+
+    if (un_mpi_rank == 0) then
+       ! local (0-based) row pointers --> global row pointers
+       do r = 0, un_mpi_size-1
+          gth_rowptr(row_displs(r)+1:row_displs(r)+row_cnts(r)) = &
+               gth_rowptr(row_displs(r)+1:row_displs(r)+row_cnts(r)) + nnz_displs(r)
+       enddo
+       gth_rowptr(n_global+1) = nnz_global
+
+       ! renumber rows and columns to the single-task ordering,
+       ! with the columns of each row in increasing order
+       allocate(inv_perm(n_global), rhs_perm(n_global), sol_perm(n_global))
+       do r = 1, n_global
+          inv_perm(root_perm(r)+1) = r
+       enddo
+       root_rowptr(1) = 0
+       do p = 1, n_global
+          r = inv_perm(p)
+          k0 = gth_rowptr(r)
+          nk = gth_rowptr(r+1) - k0
+          do k = 1, nk
+             root_colind(root_rowptr(p)+k) = root_perm(gth_colind(k0+k)+1)
+             root_values(root_rowptr(p)+k) = gth_values(k0+k)
+          enddo
+          call sort_row(root_colind(root_rowptr(p)+1:root_rowptr(p)+nk), &
+               root_values(root_rowptr(p)+1:root_rowptr(p)+nk))
+          root_rowptr(p+1) = root_rowptr(p) + nk
+          rhs_perm(p) = rhs_global(r)
+       enddo
+
+       sol_perm = superlu_solve(root_comm, 1, 1, 0, n_global, n_global, nnz_global, &
+            root_rowptr, root_colind, root_values, rhs_perm)
+
+       do r = 1, n_global
+          sol_global(r) = sol_perm(root_perm(r)+1)
+       enddo
+       deallocate(inv_perm, rhs_perm, sol_perm)
+    endif
+
+    call MPI_Scatterv(sol_global, row_cnts, row_displs, MPI_DOUBLE_PRECISION, &
+         sol, n_loc, MPI_DOUBLE_PRECISION, 0, union_world, ierr)
+
+    deallocate(rhs_global, sol_global, gth_rowptr, gth_colind, gth_values)
+
+  end function root_solve_superlu
+  !-----------------------------------------------------------------------
+
+  ! 0-based row number that each of my rows has in the single-task matrix
+  ! (south and equator rows first, then north, see calc_grid_ij for mpi_size==1)
+  ! must be called by all union procs
+  function dist_canonical_rows() result(rows)
+
+    use params_module,only:nmlat_h,nmlat_T1,nmlon
+    use mpi_module,only:mlat0,mlat1,mlon0,mlon1,mlatd0,mlatd1,mlond0,mlond1, &
+         mpi_rank,mygrid_size,mygrid_size_s
+
+    integer,dimension(mygrid_size) :: rows
+
+    real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1) :: row_s,row_n
+    real(kind=rp),dimension(mygrid_size) :: flat_s,flat_n
+    integer :: i,j,n_s
+
+    ! dist_flatten averages the hemispheres at low latitudes,
+    ! so put the same row number in both and flatten each hemisphere separately
+    row_s = 0
+    row_n = 0
+    do i = mlon0,mlon1
+       do j = mlat0,mlat1
+          row_s(:,j,i) = (i-1)*nmlat_h + j - 1
+          if (j < nmlat_h) then
+             row_n(:,j,i) = nmlat_h*nmlon + (i-1)*(nmlat_h-1) + (nmlat_T1-j+1-nmlat_h) - 1
+          endif
+       enddo
+    enddo
+
+    flat_s = dist_flatten(row_s)
+    flat_n = dist_flatten(row_n)
+
+    ! dynamo procs own their south rows first, followed by any north rows
+    ! (extra procs own only north rows)
+    n_s = 0
+    if (mpi_rank >= 0) n_s = mygrid_size_s
+    rows(1:n_s) = nint(flat_s(1:n_s))
+    rows(n_s+1:mygrid_size) = nint(flat_n(n_s+1:mygrid_size))
+
+  end function dist_canonical_rows
+  !-----------------------------------------------------------------------
+
+  ! sort one CSR row by column index, keeping all entries (including zeros)
+  subroutine sort_row(cols, vals)
+
+    integer(kind=c_int),dimension(:),intent(inout) :: cols
+    real(kind=c_double),dimension(:),intent(inout) :: vals
+
+    integer :: i, j
+    integer(kind=c_int) :: tmp_c
+    real(kind=c_double) :: tmp_v
+
+    do i = 2, size(cols)
+       tmp_c = cols(i)
+       tmp_v = vals(i)
+       do j = i-1, 1, -1
+          if (cols(j) <= tmp_c) exit
+          cols(j+1) = cols(j)
+          vals(j+1) = vals(j)
+       enddo
+       cols(j+1) = tmp_c
+       vals(j+1) = tmp_v
+    enddo
+
+  end subroutine sort_row
+  !-----------------------------------------------------------------------
+
+  function superlu_solve(comm, nprow, npcol, first_row, n_global, n_loc, nnz_loc, &
+       rowptr, colind, values, rhs) result(sol)
+
+    use mpi
+    use mpi_module,only: un_mpi_rank
+
+    integer,intent(in) :: comm, nprow, npcol, first_row
+    integer,intent(in) :: n_loc,nnz_loc, n_global
+    integer(kind=c_int),dimension(n_loc+1),intent(in) :: rowptr
+    integer(kind=c_int),dimension(nnz_loc),intent(in) :: colind
+    real(kind=c_double),dimension(nnz_loc),intent(in) :: values
 
     !warning! we assume that kind=rp is same as c_double for values
     !and rhs input
@@ -1297,8 +1549,7 @@ module dist_solver_module
 
     ! for SuperLU sparse matrix solver
     integer,parameter :: nrhs = 1
-    integer :: i, iopt, first_row, nprow, npcol
-    real(kind=c_double) :: scale
+    integer :: comm_size, mpierr
     logical :: A_changed
     !most superlu structures are module-level variables
 
@@ -1308,8 +1559,7 @@ module dist_solver_module
 
     type(c_ptr) :: stat_ptr
 
-    !get my first row in distributed matrix
-    first_row = task_csr_rowstarts(un_mpi_rank)     !these are 0-based already
+    !first_row is my first row in distributed matrix (0-based)
     if (first_row < 0 .or. first_row >= n_global) then
        write(*,*)  "Superlu Error: first_row out of range", first_row, n_global
     endif
@@ -1342,12 +1592,9 @@ module dist_solver_module
        call f_create_SuperLUStat_handle(stat)
 
        ! Initialize the SuperLU_DIST process grid
-       !i'll use the same layout as the dynamo, but double the lat for the extra procs
-       nprow = 2*lat_size
-       npcol = lon_size
-
-       call f_superlu_gridinit(union_world, nprow, npcol, grid)
-       if (nprow * npcol /= un_mpi_size) then
+       call f_superlu_gridinit(comm, nprow, npcol, grid)
+       call MPI_Comm_size(comm, comm_size, mpierr)
+       if (nprow * npcol /= comm_size) then
           write(*,*) "SuperLU ERROR: nprow*npcol != nprocs"
        endif
 
@@ -1522,17 +1769,7 @@ module dist_solver_module
 
     ! result is in sol (already assigned by reference in pdgssvx)
 
-    if (reproducible) then
-       ! Round solution to 6 significant digits
-       do i = 1, n_loc
-          if (sol(i) /= 0.0_c_double) then
-             scale = 10.0_c_double ** (floor(log10(abs(sol(i)))) - 5)
-             sol(i) = anint(sol(i) / scale) * scale
-          end if
-       end do
-    end if
-
-  end function dist_solve_superlu
+  end function superlu_solve
   !-----------------------------------------------------------------------
 
   subroutine finalize_superlu()
@@ -1875,6 +2112,10 @@ end function compute_pattern_hash
 
   subroutine dist_solver_final()
 
+    use mpi
+
+    integer :: ierr
+
     !clean up
     call dist_spmv_free(halo)
 
@@ -1883,6 +2124,14 @@ end function compute_pattern_hash
     if (allocated(g_values_csr)) deallocate(g_values_csr)
 
     call finalize_superlu()
+
+    if (root_comm_created) then
+       if (root_comm /= MPI_COMM_NULL) call MPI_Comm_free(root_comm, ierr)
+       root_comm_created = .false.
+    endif
+    if (allocated(root_rowptr)) deallocate(root_rowptr)
+    if (allocated(root_colind)) deallocate(root_colind)
+    if (allocated(root_values)) deallocate(root_values)
 
   endsubroutine dist_solver_final
 

@@ -366,7 +366,7 @@ module calculate_terms_module
 ! M3_p is only the bottom level
 
     use params_module,only:nmlat_h
-    use mpi_module,only:reduce_sum_1d
+    use mpi_module,only:reduce_sum_points
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: &
@@ -377,7 +377,9 @@ module calculate_terms_module
     integer :: mlat0,mlat1,mlon0,mlon1,i,j,isn
     real(kind=rp) :: facArea
     real(kind=rp),dimension(2) :: sumfac,sumzigP,corr
-    real(kind=rp),dimension(4) :: tmp_sub,tmp_full
+    real(kind=rp),dimension(4) :: tmp_full
+! point contributions to sumfac (1:2) and sumzigP (3:4) for each hemisphere
+    real(kind=rp),dimension(4,2,mlatd0+1:mlatd1-1,mlond0+1:mlond1-1) :: contrib
 
     mlat0 = mlatd0+1
     mlat1 = mlatd1-1
@@ -387,8 +389,7 @@ module calculate_terms_module
 
 ! corr = - zigP*abs(Jmr)/sinI * [sum_i^N Jmr*area] / [sum_i^N abs(Jmr)*zigP/sinI*area]
 ! sinI is ignored by assuming it is close to 1 at high latitudes
-    sumfac = 0
-    sumzigP = 0
+    contrib = 0
 
 ! exclude halo points to avoid double counting
     do i = mlon0,mlon1
@@ -397,8 +398,8 @@ module calculate_terms_module
           do isn = 1,2
             if (zigP_p(isn,j,i) > thres) then
               facArea = fac_hl_out_p(isn,j,i)*M3_p(isn,j,i)
-              sumfac(isn) = sumfac(isn)+facArea
-              sumzigP(isn) = sumzigP(isn)+zigP_p(isn,j,i)*abs(facArea)
+              contrib(isn,isn,j,i) = facArea
+              contrib(isn+2,isn,j,i) = zigP_p(isn,j,i)*abs(facArea)
             else
               fac_hl_out_p(isn,j,i) = 0
             endif
@@ -407,11 +408,7 @@ module calculate_terms_module
       enddo
     enddo
 
-    tmp_sub(1) = sumfac(1)
-    tmp_sub(2) = sumfac(2)
-    tmp_sub(3) = sumzigP(1)
-    tmp_sub(4) = sumzigP(2)
-    tmp_full = reduce_sum_1d(tmp_sub,4,-1)
+    tmp_full = reduce_sum_points(contrib,4)
     sumfac(1) = tmp_full(1)
     sumfac(2) = tmp_full(2)
     sumzigP(1) = tmp_full(3)
@@ -445,7 +442,7 @@ module calculate_terms_module
 ! M3_p is only the bottom level
 
     use params_module,only:nmlat_h
-    use mpi_module,only:reduce_sum_1d
+    use mpi_module,only:reduce_sum_points
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: &
@@ -454,7 +451,9 @@ module calculate_terms_module
 
     integer :: mlat0,mlat1,mlon0,mlon1,i,j,isn
     real(kind=rp) :: downfac
-    real(kind=rp),dimension(2) :: subsum,fullsum
+    real(kind=rp),dimension(2) :: fullsum
+! point contributions to the upward (1) and downward (2) FAC sums
+    real(kind=rp),dimension(2,2,mlatd0+1:mlatd1-1,mlond0+1:mlond1-1) :: contrib
 
     mlat0 = mlatd0+1
     mlat1 = mlatd1-1
@@ -463,7 +462,7 @@ module calculate_terms_module
     fac_hl_out_p = 0 ! not fill value
 
 ! calculate the sum of upward and downward FACs
-    subsum = 0
+    contrib = 0
 
 ! exclude halo points to avoid double counting
     do i = mlon0,mlon1
@@ -471,15 +470,15 @@ module calculate_terms_module
         if (j>=2 .and. j<=nmlat_h) then ! no pole
           do isn = 1,2
             if (fac_hl_in_p(isn,j,i) > 0) &
-              subsum(1) = subsum(1)+fac_hl_in_p(isn,j,i)*M3_p(isn,j,i)
+              contrib(1,isn,j,i) = fac_hl_in_p(isn,j,i)*M3_p(isn,j,i)
             if (fac_hl_in_p(isn,j,i) < 0) &
-              subsum(2) = subsum(2)-fac_hl_in_p(isn,j,i)*M3_p(isn,j,i)
+              contrib(2,isn,j,i) = -fac_hl_in_p(isn,j,i)*M3_p(isn,j,i)
           enddo
         endif
       enddo
     enddo
 
-    fullsum = reduce_sum_1d(subsum,2,-1)
+    fullsum = reduce_sum_points(contrib,2)
 
 ! if the integrated upward current is stronger than the downward current
 ! scale the upward current down globally
