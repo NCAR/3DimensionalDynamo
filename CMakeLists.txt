@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.14...3.31)
 
 project(dynamo_driver LANGUAGES Fortran C)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
+option(CMAKE_VERBOSE_MAKEFILE "Show full compile/link commands" ON)
 
 # Default to Release if the user did not specify a build type
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -22,6 +22,16 @@ find_package(MPI REQUIRED COMPONENTS Fortran)
 if(DEFINED ENV{NETCDF} AND NOT NETCDF_ROOT)
   set(NETCDF_ROOT "$ENV{NETCDF}" CACHE PATH "NetCDF installation root")
 endif()
+# Otherwise ask nf-config (netcdf-fortran) for its prefix, so that the C
+# library is taken from the same install as libnetcdff rather than /usr.
+if(NOT NETCDF_ROOT)
+  find_program(NF_CONFIG nf-config)
+  if(NF_CONFIG)
+    execute_process(COMMAND ${NF_CONFIG} --prefix
+      OUTPUT_VARIABLE _nf_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(NETCDF_ROOT "${_nf_prefix}" CACHE PATH "NetCDF installation root")
+  endif()
+endif()
 
 # Try the CMake config package first (present in modern/Spack builds).
 # Fall back to find_library + find_path for older or system installs.
@@ -39,10 +49,12 @@ else()
   find_library(NETCDF_C_LIBRARY
     NAMES netcdf
     HINTS "${NETCDF_ROOT}/lib" "${NETCDF_ROOT}/lib64"
+    NO_CMAKE_SYSTEM_PATH
     REQUIRED)
   find_path(NETCDF_C_INCLUDE_DIR
     NAMES netcdf.h
     HINTS "${NETCDF_ROOT}/include"
+    NO_CMAKE_SYSTEM_PATH
     REQUIRED)
 
   add_library(netCDF::netcdf UNKNOWN IMPORTED)
@@ -76,6 +88,22 @@ set_target_properties(netCDF::netcdff PROPERTIES
 #   cmake -DSUPERLU_DIST_ROOT=/path/to/superlu_dist ..
 find_package(SuperLUDIST REQUIRED)
 
+# ── BLAS (needed by the static SuperLU-DIST libraries) ────────────────────────
+# Select a specific vendor with -DBLA_VENDOR=OpenBLAS (or Intel10_64lp, ...).
+find_package(BLAS REQUIRED)
+
+# ── Compiler flags ────────────────────────────────────────────────────────────
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  set(_gnu_flags -ffree-line-length-none -fbacktrace)
+  if(CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
+    # mpif.h / "use mpi" interfaces trip gfortran >= 10 argument checking
+    list(APPEND _gnu_flags -fallow-argument-mismatch -fallow-invalid-boz)
+  endif()
+  add_compile_options("$<$<COMPILE_LANGUAGE:Fortran>:${_gnu_flags}>")
+  add_compile_options(
+    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:Debug>>:-O0;-Wall;-fcheck=bounds;-ffpe-trap=zero,overflow>")
+endif()
+
 # ── Sources ───────────────────────────────────────────────────────────────────
 set(src)
 add_subdirectory(driver)
@@ -90,8 +118,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   SuperLUDIST::superlu_dist_fortran
   SuperLUDIST::superlu_dist
   netCDF::netcdff
-  netCDF::netcdf)
+  netCDF::netcdf
+  BLAS::BLAS
+  m)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
   OUTPUT_NAME            ${PROJECT_NAME}
   Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/mod")
+
+# The project compiles its own superlu_mod / superlupara_mod; make sure those
+# are found before any copies installed in the SuperLU-DIST include dir.
+target_include_directories(${PROJECT_NAME} BEFORE PRIVATE
+  "${CMAKE_CURRENT_BINARY_DIR}/mod")

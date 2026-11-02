@@ -65,7 +65,7 @@ if(SuperLUDIST_FOUND AND NOT TARGET SuperLUDIST::superlu_dist)
     add_library(SuperLUDIST::superlu_dist_fortran UNKNOWN IMPORTED)
     set_target_properties(SuperLUDIST::superlu_dist_fortran PROPERTIES
       IMPORTED_LOCATION             "${SUPERLU_DIST_FORTRAN_LIBRARY}"
-      INTERFACE_INCLUDE_DIRECTORIES "${SUPERLU_DIST_INCLUDE_DIR}")
+      INTERFACE_LINK_LIBRARIES      SuperLUDIST::superlu_dist)
   endif()
 endif()
 
