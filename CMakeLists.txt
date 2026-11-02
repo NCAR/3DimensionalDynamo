@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.18)
 
 project(
  "dynamo_driver"
@@ -7,8 +7,25 @@ project(
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-find_package(MPI REQUIRED Fortran)
-find_package(superlu REQUIRED C)
+find_package(MPI REQUIRED COMPONENTS Fortran)
+find_package(superlu REQUIRED)
+
+# netCDF-Fortran: try pkg-config first, then fall back to the NETCDF env var
+find_package(PkgConfig QUIET)
+if(PKG_CONFIG_FOUND)
+  pkg_check_modules(NETCDFF QUIET IMPORTED_TARGET netcdf-fortran)
+endif()
+if(TARGET PkgConfig::NETCDFF)
+  set(netcdf_lib PkgConfig::NETCDFF)
+elseif(DEFINED ENV{NETCDF})
+  add_library(netcdff_ext INTERFACE)
+  target_include_directories(netcdff_ext INTERFACE $ENV{NETCDF}/include)
+  target_link_directories(netcdff_ext INTERFACE $ENV{NETCDF}/lib)
+  target_link_libraries(netcdff_ext INTERFACE netcdff netcdf)
+  set(netcdf_lib netcdff_ext)
+else()
+  message(FATAL_ERROR "netCDF-Fortran not found: set PKG_CONFIG_PATH or NETCDF")
+endif()
 
 set(src)
 
@@ -22,9 +39,11 @@ add_executable(
   "${src}"
 )
 
-target_include_directories("${PROJECT_NAME}" PRIVATE $ENV{NETCDF}/include)
-target_link_directories("${PROJECT_NAME}" PRIVATE $ENV{NETCDF}/lib)
-target_link_libraries("${PROJECT_NAME}" PRIVATE superlu::superlu netcdff)
+target_link_libraries("${PROJECT_NAME}" PRIVATE MPI::MPI_Fortran superlu::superlu ${netcdf_lib})
+
+# Allow free-form source lines longer than 132 characters with gfortran
+target_compile_options("${PROJECT_NAME}" PRIVATE
+  $<$<COMPILE_LANG_AND_ID:Fortran,GNU>:-ffree-line-length-none>)
 
 # Using set_target_properties for each target is usually preferred
 set_target_properties(

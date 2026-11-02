@@ -6,6 +6,8 @@ module outputdata_mod
   use inputdata_mod, only: nlons1, npflpts1, nlons2, npflpts2
   use inputdata_mod, only: nmaglat, nmaglon
   use inputdata_mod, only: nmaglat_s, nmaglon_s
+  use prec, only: sp
+  use cons_mod, only: fill_value
 
   use netcdf
 
@@ -68,6 +70,14 @@ contains
              call handle_error(nf90_inq_attname( infid, vid, n, attname ), prefix//'nf90_inq_attname' )
              call handle_error(nf90_copy_att( infid, vid, trim(attname), outfid, varid), prefix//'nf90_copy_att '//trim(attname) )
           enddo
+
+          ! flag points the dynamo leaves uncomputed (e.g., poles and equator) as missing
+          if (xtype==nf90_float .and. ndims>1) then
+             if (nf90_inquire_attribute(outfid, varid, '_FillValue')/=nf90_noerr) then
+                call handle_error(nf90_put_att(outfid, varid, '_FillValue', real(fill_value,kind=sp)), &
+                     prefix//'nf90_put_att _FillValue '//trim(varname) )
+             end if
+          end if
           deallocate(dimids)
        end do
 
