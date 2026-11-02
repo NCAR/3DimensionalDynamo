@@ -72,7 +72,7 @@ module dist_solver_module
 
 
     use params_module, only:nmlat_h,nmlat_T1,nmlon
-    use cons_module, only:read_fac
+    use cons_module, only:read_fac,jlatm_JT
     use mpi_module, only: mpi_rank,dynamo_world,union_world, lat_rank,lon_rank,&
                           nmlat_task,nmlon_task,mygrid_size,&
                           sync_mlat_5d, sync_mlon_5d,&
@@ -104,6 +104,7 @@ module dist_solver_module
     real(kind=rp),dimension(10,mlatd0:mlatd1,mlond0:mlond1) :: coef_s
     real(kind=rp),dimension(10,mlatd0:mlatd1,mlond0:mlond1) :: coef_n
     real(kind=rp),dimension(mlatd0:mlatd1,mlond0:mlond1) :: zero
+    real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1) :: fac_sum
 
     real(kind=rp),dimension(:), allocatable :: rhs,z,pot_hl_f,sol
 
@@ -171,7 +172,15 @@ module dist_solver_module
     ! determine FAC forcing (dense)
     if (read_fac) then ! input is corrected fac_hl, pot_hl is not used
 
-       z = dist_flatten(fac_hl)
+       ! equatorward of jlatm_JT each hemisphere row carries the summed (SH+NH)
+       ! coefficients and source, so it needs the summed FAC; dist_flatten
+       ! averages the hemispheres there, so put the sum in both
+       ! (with only the average, half the FAC current drains into the fixed pole node)
+       fac_sum = fac_hl
+       do concurrent (i = mlond0:mlond1, j = mlatd0:mlatd1, j>=jlatm_JT+1 .and. j<=nmlat_h)
+          fac_sum(:,j,i) = fac_hl(1,j,i)+fac_hl(2,j,i)
+       enddo
+       z = dist_flatten(fac_sum)
 
     else ! input is pot_hl, fac_hl is to be calculated (output)
 
