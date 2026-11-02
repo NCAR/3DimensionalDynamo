@@ -202,6 +202,7 @@ program main
      call outputdata_write_s1_fld( varname='sigma_ped_s1', time_ndx=itime, fld=sigma_ped_s1 )
      call outputdata_write_s2_fld( varname='sigma_hal_s2', time_ndx=itime, fld=sigma_hal_s2 )
      call outputdata_write_s2_fld( varname='sigma_ped_s2', time_ndx=itime, fld=sigma_ped_s2 )
+     call outputdata_write_s1_fld( varname='sigma_ped_p', time_ndx=itime, fld=sigped_p )
 
      call dynamo_calc( &
           sigma_ped_s1, sigma_hal_s1, un_s1, vn_s1, &
