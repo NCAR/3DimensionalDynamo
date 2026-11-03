@@ -144,7 +144,7 @@ module dist_solver_module
     endif
 
     !allocate only the first time through
-    if (.not. superlu_initialized) then
+    if (.not. allocated(g_rowptr)) then
        allocate(g_rowptr(mygrid_size+1))
        allocate(g_colind(nnz_est))
        allocate(g_values_csr(nnz_est))
