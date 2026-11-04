@@ -11,8 +11,8 @@ module dynamo_interface_mod
   use mpi_mod, only: mlond0, mlond1, mlatd0, mlatd1 ! for ghost pnts
   use mpi_mod, only: sync_mlat_5d, sync_mlon_5d
 
-  use params_mod, only: read_pot, read_fac
-  use params_mod, only: nmlat_h, nmlatS2_h, nmlon, nhgt_fix, nhgt_fix_r
+  use edyn3d_params_mod, only: read_pot, read_fac
+  use edyn3d_params_mod, only: nmlat_h, nmlatS2_h, nmlon, nhgt_fix, nhgt_fix_r
 
   use mpi_mod, only: mpi_init => init, setup_topology
   use mpi_mod, only: mpi_rank, mpi_size

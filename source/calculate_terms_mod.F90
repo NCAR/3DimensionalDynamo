@@ -11,7 +11,7 @@ module calculate_terms_mod
     npts_p,vmp_p,bmag_p,sigP_p,zigP_p)
 ! calculate field-line integrated conductance
 
-    use params_mod,only:nhgt_fix,nmlat_h
+    use edyn3d_params_mod,only:nhgt_fix,nmlat_h
     use cons_mod,only:fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -43,7 +43,7 @@ module calculate_terms_mod
     D_s2,M2_s2,d1d2_s2,d2d2_s2,sigP_s2,sigH_s2, &
     N1p_s1,N1h_s1,N2p_s2,N2h_s2)
 
-    use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h,ylonm,rho,rho_s
+    use edyn3d_params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h,ylonm,rho,rho_s
     use cons_mod,only:r0,fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -129,7 +129,7 @@ module calculate_terms_mod
     d1_s1,d2_s1,d1_s2,d2_s2,Je1D_s1,Je2D_s2)
 ! calculate wind driven currents
 
-    use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
+    use edyn3d_params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
     use cons_mod,only:J3LB,fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -225,7 +225,7 @@ module calculate_terms_mod
 ! and needs to be corrected (direct FAC input may be unbalanced)
 ! M3_p is only the bottom level
 
-    use params_mod,only:nmlat_h
+    use edyn3d_params_mod,only:nmlat_h
     use mpi_mod,only:reduce_sum_1d
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -292,7 +292,7 @@ module calculate_terms_mod
 ! and needs to be corrected (direct FAC input may be unbalanced)
 ! M3_p is only the bottom level
 
-    use params_mod,only:nmlat_h
+    use edyn3d_params_mod,only:nmlat_h
     use mpi_mod,only:reduce_sum_1d
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -355,7 +355,7 @@ module calculate_terms_mod
     pot_p,ed1_s1,ed2_s1,ed1_s2,ed2_s2)
 ! calculates electric field Ed1, Ed2 at S1 and S2 points
 
-    use params_mod,only:nmlat_h,nmlatS2_h,ylonm,rho,rho_s
+    use edyn3d_params_mod,only:nmlat_h,nmlatS2_h,ylonm,rho,rho_s
     use cons_mod,only:r0,fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -409,7 +409,7 @@ module calculate_terms_mod
 ! ve2 = -Ed1/Be3
 ! be3 is only the bottom level
 
-    use params_mod,only:nmlat_h,nmlatS2_h
+    use edyn3d_params_mod,only:nmlat_h,nmlatS2_h
     use cons_mod,only:fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -449,7 +449,7 @@ module calculate_terms_mod
     ex_s1,ey_s1,ez_s1,ex_s2,ey_s2,ez_s2)
 ! get electric fields in geographic coordinates (Ed1,2 -> Ex,y,z)
 
-    use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
+    use edyn3d_params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
     use cons_mod,only:fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -513,7 +513,7 @@ module calculate_terms_mod
     vx_s1,vy_s1,vz_s1,vx_s2,vy_s2,vz_s2)
 ! get drift velocities in geographic coordinates (Ve1,2 -> Vx,y,z)
 
-    use params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
+    use edyn3d_params_mod,only:nhgt_fix,nmlat_h,nmlatS2_h
     use cons_mod,only:fill_value
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -577,7 +577,7 @@ module calculate_terms_mod
     M2_s2,N2p_s2,N2h_s2,Je2D_s2, &
     M3_r,I1_s1,I2_s2,I3_r)
 
-    use params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h,nmlon
+    use edyn3d_params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h,nmlon
     use cons_mod,only:J3LB,fill_value
     use mpi_mod,only:gather_mlon_3d,sync_mlat_5d,sync_mlon_5d
 

@@ -10,7 +10,7 @@ list(
   "${dir}/grid_mod.F90"
   "${dir}/init_mod.F90"
   "${dir}/mpi_mod.F90"
-  "${dir}/params_mod.F90"
+  "${dir}/edyn3d_params_mod.F90"
   "${dir}/prec.F90"
   "${dir}/solver_mod.F90"
   "${dir}/stencil_mod.F90"

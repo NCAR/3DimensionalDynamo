@@ -1,4 +1,4 @@
-module params_mod
+module edyn3d_params_mod
 ! grid parameters (geo/mag)
 
   use prec, only: rp
@@ -34,4 +34,4 @@ module params_mod
     read_pot = .false., & ! whether potential is used at high latitude
     read_fac = .false.
 
-end module params_mod
+end module edyn3d_params_mod

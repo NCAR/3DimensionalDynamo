@@ -29,8 +29,8 @@ module solver_mod
 ! if potential is read in, pot_hl is used, fac_hl is output
 ! if FAC is read in, pot_hl is not used, only fac_hl is used
 
-    use params_mod,only:nmlat_h,nmlon
-    use params_mod,only:read_pot,read_fac
+    use edyn3d_params_mod,only:nmlat_h,nmlon
+    use edyn3d_params_mod,only:read_pot,read_fac
     use mpi_mod,only:gather_mag,bcast,mpi_rank
     use cons_mod,only:jlatm_JT
 
@@ -185,7 +185,7 @@ module solver_mod
 
 ! this is not a 9-point stencil
 
-    use params_mod,only:nmlat_h,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlon
     use cons_mod,only:jlatm_JT
 
     real(kind=rp),dimension(nmlat_h,nmlon),intent(in) :: bij
@@ -731,7 +731,7 @@ module solver_mod
 ! construct vector RHS
 ! this is different from ravel
 
-    use params_mod,only:nmlat_h,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlon
     use cons_mod,only:jlatm_JT
 
     real(kind=rp),dimension(2,nmlat_h,nmlon),intent(in) :: src
@@ -799,7 +799,7 @@ module solver_mod
 ! isn,j,i need to satisfy 1<=isn<=2, 1<=j<=nmlat_h, 1<=i<=nmlon
 ! but those conditions are not enforced
 
-    use params_mod,only:nmlat_h,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlon
     use cons_mod,only:jlatm_JT
 
     integer,intent(in) :: isn,j,i
@@ -830,7 +830,7 @@ module solver_mod
 ! ij needs to be within [1, nlonlat]
 ! but it is not enforced
 
-    use params_mod,only:nmlat_h,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlon
     use cons_mod,only:jlatm_JT
 
     integer,intent(in) :: ij
@@ -864,7 +864,7 @@ module solver_mod
 ! reorder 2D fields (lat-lon) into 1D vector (RHS)
 ! this is the inverse of unravel (except for the north pole)
 
-    use params_mod,only:nmlat_h,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlon
     use cons_mod,only:jlatm_JT
 
     real(kind=rp),dimension(2,nmlat_h,nmlon),intent(in) :: fin
@@ -906,7 +906,7 @@ module solver_mod
 ! reorder 1D vector (RHS) into 2D fields (lat-lon)
 ! this is the inverse of ravel (except for the north pole)
 
-    use params_mod,only:nmlat_h,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlon
     use cons_mod,only:jlatm_JT
 
     real(kind=rp),dimension(nlonlat),intent(in) :: fin

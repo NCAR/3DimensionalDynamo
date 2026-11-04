@@ -9,7 +9,7 @@ module init_mod
   subroutine init_cons
 ! Set derived constants
 
-    use params_mod,only:nmlat_h,nmlon,ylatm
+    use edyn3d_params_mod,only:nmlat_h,nmlon,ylatm
     use cons_mod,only:ylatm_JT,jlatm_JT,J3LB
     use solver_mod,only:nlonlat
 
@@ -33,7 +33,7 @@ module init_mod
     jmax_p,jmax_s1,jmax_s2,jmax_r,size_p,size_s1,size_s2,size_r, &
     qdlat_p,qdlat_s1,qdlat_s2,qdlat_r)
 
-    use params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
+    use edyn3d_params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
       hgt_fix,hgt_fix_r,ha,ha_s,ylatm,ylatm_s
     use cons_mod,only:re,r0,fill_value
     use util_mod,only:find
@@ -133,9 +133,9 @@ module init_mod
        qdlat_p,qdlat_s1,qdlat_s2,qdlat_r, &
        glat_p, glon_p, glat_s1, glon_s1, glat_s2, glon_s2, glat_r, glon_r )
 
-    use params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
+    use edyn3d_params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
       hgt_fix,hgt_fix_r,ha,ha_s,ylatm,ylatm_s
-    use params_mod,only:ylonm,ylonm_s
+    use edyn3d_params_mod,only:ylonm,ylonm_s
     use cons_mod,only:h0,rtd
     use fieldline_mod
     use apex,only: apex_mall,apex_q2g
@@ -303,7 +303,7 @@ module init_mod
   pure subroutine calculate_a(a1,a3)
 ! a1,a3 vary from 0 at the magnetic pole to 1 at the magnetic equator
 
-    use params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,rho_s,hgt_fix_r
+    use edyn3d_params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,rho_s,hgt_fix_r
     use cons_mod,only:pi,re,r0
 
     real(kind=rp),dimension(nhgt_fix  ,nmlat_h+1),intent(out) :: a1
@@ -369,7 +369,7 @@ module init_mod
     F_p,F_s1,F_s2,F_r,M3_p,M1_s1,M2_s2,M3_r)
 ! calculate integrated areas for each surface of a volume (Chapter 5)
 
-    use params_mod,only:nhgt_fix,nhgt_fix_r, &
+    use edyn3d_params_mod,only:nhgt_fix,nhgt_fix_r, &
       nmlat_h,nmlatS2_h,ylonm,rho_s,hgt_fix,hgt_fix_r
     use cons_mod,only:re,r0,fill_value
     use mpi_mod,only:mlond0,mlond1,mlatd0,mlatd1
