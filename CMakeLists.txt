@@ -101,7 +101,7 @@ if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   endif()
   add_compile_options("$<$<COMPILE_LANGUAGE:Fortran>:${_gnu_flags}>")
   add_compile_options(
-    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:Debug>>:-O0;-Wall;-Wno-unused-dummy-argument;-fcheck=bounds;-ffpe-trap=zero,overflow>")
+    "$<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CONFIG:Debug>>:-O0;-Wall;-fcheck=bounds;-ffpe-trap=zero,overflow>")
 endif()
 
 # ── Sources ───────────────────────────────────────────────────────────────────
