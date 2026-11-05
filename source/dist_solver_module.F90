@@ -1543,6 +1543,7 @@ module dist_solver_module
 
     use mpi
     use mpi_module,only: un_mpi_rank
+    use edyn3d_params_mod, only: reproducible
 
     integer,intent(in) :: comm, nprow, npcol, first_row
     integer,intent(in) :: n_loc,nnz_loc, n_global
@@ -1696,12 +1697,17 @@ module dist_solver_module
 
        else !A didn't change
           !are we at a refactor interval or being forced to refactor?
-          if ((superlu_refactor_interval == superlu_same_perm_count) .or. (force_refactor)) then
+          !for reproducible solutions always refactor: reusing the row permutation and
+          !scalings from an earlier matrix makes the solution depend on the run history
+          !(e.g., not bit-for-bit across a restart)
+          if (reproducible .or. (superlu_refactor_interval == superlu_same_perm_count) .or. (force_refactor)) then
              !reset counter to 1
              superlu_same_perm_count = 1
 
              if (un_mpi_rank == 0) then
-                if (force_refactor) then
+                if (reproducible) then
+                   write(*,*) "Superlu status: Refactoring before solve for reproducible solution ... "
+                else if (force_refactor) then
                    write(*,*) "Superlu status: Refactoring before solve due to a force ... "
                 else
                    write(*,*) "Superlu status: Refactoring before solve due to reaching refactor interval: ", superlu_refactor_interval
