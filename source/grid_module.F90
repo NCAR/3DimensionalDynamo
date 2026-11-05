@@ -11,7 +11,7 @@ module grid_module
 ! reference height at k=0.5, grids start at 80 km
 ! with closer latitude spacing at low latitudes and in the auroral region
 
-    use params_module,only:nmlon,nmlat_h,nmlatS2_h,nmlat_T1,nmlat_T2,nhgt_fix,nhgt_fix_r, &
+    use edyn3d_params_mod,only:nmlon,nmlat_h,nmlatS2_h,nmlat_T1,nmlat_T2,nhgt_fix,nhgt_fix_r, &
       ylonm,ylonm_s,ylatm,ylatm_s,rho,rho_s,ha,ha_s,hgt_fix,hgt_fix_r
     use cons_module,only:re,h0,r0,pi,dtr,fill_value
 
@@ -182,7 +182,7 @@ module grid_module
 !   4. high-latitude spacing
 !   5. longitude spacing
 
-    use params_module,only:nmlon,nmlat_h,nmlatS2_h,nmlat_T1,nmlat_T2,nhgt_fix,nhgt_fix_r, &
+    use edyn3d_params_mod,only:nmlon,nmlat_h,nmlatS2_h,nmlat_T1,nmlat_T2,nhgt_fix,nhgt_fix_r, &
       ylonm,ylonm_s,ylatm,ylatm_s,rho,rho_s,ha,ha_s,hgt_fix,hgt_fix_r
     use cons_module,only:re,h0,r0,pi,dtr,rtd,fill_value
 

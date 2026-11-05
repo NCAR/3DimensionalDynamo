@@ -1,4 +1,4 @@
-module params_module
+module edyn3d_params_mod
 ! grid parameters (geo/mag)
 
   use prec, only: rp
@@ -32,4 +32,4 @@ module params_module
 
   logical :: reproducible = .false.
 
-end module params_module
+end module edyn3d_params_mod

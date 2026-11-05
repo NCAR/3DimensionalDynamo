@@ -11,7 +11,7 @@ program main
   use inputdata_mod, only: edyn3d_nmlat_h, edyn3d_nmlon, edyn3d_nhgt
   use inputdata_mod, only: hilat_pot_vid, hilat_fac_vid
   use mpi_module, only: mpi_rank, mpi_size, lat_size, lon_size
-  use params_module,only: nmlat_h, nmlon, nhgt_fix, hgt_fix_r
+  use edyn3d_params_mod,only: nmlat_h, nmlon, nhgt_fix, hgt_fix_r
   use indices_mod, only : indices_init
   use mpi_module, only: mlat0, mlat1, mlon0, mlon1
   use mpi_module, only: mlond0, mlond1, mlatd0, mlatd1

@@ -2,7 +2,7 @@ module alloc_module
   use prec, only: rp
   use fieldline_module, only: npts_p, npts_s2, npts_s1, npts_r, qdlat_p, qdlat_s1, qdlat_s2, qdlat_r
   use fieldline_module, only: jmax_p, jmax_s1, jmax_s2, jmax_r, size_p, size_s1, size_s2, size_r
-  use params_module, only: nmlat_h, nmlatS2_h, nhgt_fix, nhgt_fix_r
+  use edyn3d_params_mod, only: nmlat_h, nmlatS2_h, nhgt_fix, nhgt_fix_r
 
   implicit none
 

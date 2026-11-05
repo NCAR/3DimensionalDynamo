@@ -8,8 +8,8 @@ module inputdata_mod
   use netcdf, only: nf90_close, nf90_inq_varid, nf90_get_var
   use mpi_module, only: mlat0, mlat1, mlon0, mlon1
   use mpi_module, only: mlond0, mlond1, mlatd0, mlatd1
-  use params_module, only: nhgt_fix, nmlat_T1, nmlatS2_h
-  use params_module, only: nmlat_h,  nmlon
+  use edyn3d_params_mod, only: nhgt_fix, nmlat_T1, nmlatS2_h
+  use edyn3d_params_mod, only: nmlat_h,  nmlon
 
   implicit none
 

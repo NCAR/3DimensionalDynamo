@@ -12,8 +12,8 @@ module dynamo_interface_mod
   use mpi_module, only: sync_mlat_5d, sync_mlon_5d
 
   use cons_module, only: read_fac
-  use params_module, only: nmlat_h, nmlatS2_h, nmlon, nhgt_fix, nhgt_fix_r
-  use params_module, only: reproducible
+  use edyn3d_params_mod, only: nmlat_h, nmlatS2_h, nmlon, nhgt_fix, nhgt_fix_r
+  use edyn3d_params_mod, only: reproducible
 
   use mpi_module, only: mpi_init => init, setup_topology
   use mpi_module, only: un_mpi_rank, mpi_rank

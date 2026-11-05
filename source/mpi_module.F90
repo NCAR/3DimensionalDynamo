@@ -217,7 +217,7 @@ module mpi_module
     ! setup MPI decompositions in geo and mag coordinates and the connectivity matrix
     ! note: non-active procs have mpi_rank < 0
 
-    use params_module, only:nmlat_h,nmlat_T1
+    use edyn3d_params_mod, only:nmlat_h,nmlat_T1
 
     integer, intent(in) :: nmlat_in, nmlon_in
 
@@ -1452,7 +1452,7 @@ endfunction all_gather_int
 ! if reproducible is set, the points are summed in a fixed global order
 ! (i, then j, then isn) so the result does not depend on the decomposition
 
-    use params_module, only: nmlat_h, reproducible, nmlon_g => nmlon
+    use edyn3d_params_mod, only: nmlat_h, reproducible, nmlon_g => nmlon
 
     integer, intent(in) :: nf
     real(kind=rp), dimension(nf,2,mlat0:mlat1,mlon0:mlon1), intent(in) :: fld
@@ -1555,7 +1555,7 @@ endfunction all_gather_int
   ! if j lives on the calling processor
   pure function calc_grid_ij(i_in,j_in,my_latrank) result(ij)
 
-    use params_module,only:nmlat_T1, nmlat_h
+    use edyn3d_params_mod,only:nmlat_T1, nmlat_h
 
     integer, intent(in) :: i_in, j_in, my_latrank
     integer:: ij

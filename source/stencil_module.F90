@@ -10,7 +10,7 @@ module stencil_module
     S_p,N1p_s1,N1h_s1,N2p_s2,N2h_s2) result(coef)
 ! calculate height-dependent matrix coefficients
 
-    use params_module,only:nhgt_fix,nmlat_h
+    use edyn3d_params_mod,only:nhgt_fix,nmlat_h
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
     integer,dimension(nmlat_h),intent(in) :: npts_p
@@ -121,7 +121,7 @@ module stencil_module
 ! add the coefficients in height to get coefficients for each hemisphere
 ! needed for calculating high latitude FAC
 
-    use params_module,only:nhgt_fix
+    use edyn3d_params_mod,only:nhgt_fix
     use cons_module,only:phi_pol
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -190,7 +190,7 @@ module stencil_module
 ! LHS+RHS for each P-point
 ! A. Maute 2023/02: solve two hemispheres
 
-    use params_module,only:nmlat_h
+    use edyn3d_params_mod,only:nmlat_h
     use cons_module,only:jlatm_JT
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1
@@ -247,7 +247,7 @@ module stencil_module
   pure function calculate_bij(mlatd0,mlatd1,mlond0,mlond1,coef_ns2) result(bij)
 ! set field-aligned conductance (b) matrix
 
-    use params_module,only:rho,rho_s
+    use edyn3d_params_mod,only:rho,rho_s
     use cons_module,only: jlatm_JT, rho_pc
 
     integer,intent(in) :: mlatd0,mlatd1,mlond0,mlond1

@@ -9,7 +9,7 @@ module init_module
   subroutine init_cons
 ! Set derived constants
 
-    use params_module,only:ylatm
+    use edyn3d_params_mod,only:ylatm
     use cons_module,only: ylatm_JT,jlatm_JT
 
     integer,dimension(1) :: idx
@@ -25,7 +25,7 @@ module init_module
     jmax_p,jmax_s1,jmax_s2,jmax_r,size_p,size_s1,size_s2,size_r, &
     qdlat_p,qdlat_s1,qdlat_s2,qdlat_r)
 
-    use params_module,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
+    use edyn3d_params_mod,only:nhgt_fix,nhgt_fix_r,nmlat_h,nmlatS2_h, &
       nmlat_T1,nmlat_T2,hgt_fix,hgt_fix_r,ha,ha_s,ylatm,ylatm_s
     use cons_module,only:re,r0,fill_value
     use util_module,only:find
@@ -101,7 +101,7 @@ module init_module
 !-----------------------------------------------------------------------
   subroutine get_apex()
 
-    use params_module,only:hgt_fix,hgt_fix_r,nmlat_h,nmlatS2_h,ylonm,ylonm_s
+    use edyn3d_params_mod,only:hgt_fix,hgt_fix_r,nmlat_h,nmlatS2_h,ylonm,ylonm_s
     use cons_module,only:h0,rtd
     use mpi_module,only:mlond0,mlond1,mlatd0,mlatd1
     use fieldline_module
@@ -271,7 +271,7 @@ module init_module
 ! the factors m1f,m2f,m3f are independent of magnetic longitude
 ! these factors later give M1,M2,M3 when divided by F
 
-    use params_module,only:nhgt_fix,nhgt_fix_r, &
+    use edyn3d_params_mod,only:nhgt_fix,nhgt_fix_r, &
       nmlat_h,nmlatS2_h,ylonm,rho_s,hgt_fix,hgt_fix_r
     use cons_module,only:pi,re,r0,fill_value
     use mpi_module,only:mlond0,mlond1,mlatd0,mlatd1

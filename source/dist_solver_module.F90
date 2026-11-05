@@ -71,7 +71,7 @@ module dist_solver_module
     ! if potential is read in, pot_hl is used, fac_hl is output
 
 
-    use params_module, only:nmlat_h,nmlat_T1,nmlon
+    use edyn3d_params_mod, only:nmlat_h,nmlat_T1,nmlon
     use cons_module, only:read_fac,jlatm_JT
     use mpi_module, only: mpi_rank,dynamo_world,union_world, lat_rank,lon_rank,&
                           nmlat_task,nmlon_task,mygrid_size,&
@@ -323,7 +323,7 @@ module dist_solver_module
 ! This is not in the 9-point stencil but needs to be done manually
 
 
-    use params_module,only:nmlat_h,nmlat_T1,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlat_T1,nmlon
     use cons_module,only:jlatm_JT
     use mpi_module,only:mpi_rank,mpi_size,dynamo_world,lat_rank,lon_rank, &
          un_mpi_size, un_mpi_rank, union_world, ex_mpi_rank, &
@@ -1156,7 +1156,7 @@ module dist_solver_module
   function dist_construct_rhs(coef_10_s, coef_10_n) result(rhs)
 ! construct vector RHS
 
-    use params_module,only:nmlat_h,nmlat_T1,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlat_T1,nmlon
     use cons_module,only:phi_pol
     use mpi_module, only:mlatd0, mlatd1, mlat0, mlat1, mpi_rank, &
          un_mpi_rank, un_mpi_size, ex_mpi_rank, ex_mpi_size, &
@@ -1305,7 +1305,7 @@ module dist_solver_module
     use mpi_module,only: lat_size,lon_size,union_world,&
          task_csr_rowstarts, un_mpi_rank, &
          un_mpi_size
-    use params_module, only: reproducible
+    use edyn3d_params_mod, only: reproducible
 
     integer,intent(in) :: n_loc,nnz_loc, n_global
     integer(kind=c_int),dimension(n_loc+1),intent(in) :: rowptr
@@ -1477,7 +1477,7 @@ module dist_solver_module
   ! must be called by all union procs
   function dist_canonical_rows() result(rows)
 
-    use params_module,only:nmlat_h,nmlat_T1,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlat_T1,nmlon
     use mpi_module,only:mlat0,mlat1,mlon0,mlon1,mlatd0,mlatd1,mlond0,mlond1, &
          mpi_rank,mygrid_size,mygrid_size_s
 
@@ -1851,7 +1851,7 @@ end function compute_pattern_hash
 ! based on their latitude ranges (high-lat, transition, low-lat, equator)
     ! give north hemispher to extra processes
 
-    use params_module,only:nmlat_h,nmlat_T1,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlat_T1,nmlon
     use cons_module,only:jlatm_JT
     use mpi_module, only:lat_rank, mlat0, mlat1, &
          mlon0, mlon1, mlatd0, mlatd1, mlond0, mlond1, &
@@ -2000,7 +2000,7 @@ end function compute_pattern_hash
     ! this is the reverse of the dist_flatten
     ! this needs all union procs
 
-    use params_module,only:nmlat_h,nmlat_T1,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlat_T1,nmlon
     use mpi_module, only:lat_rank, mlat0, mlat1, &
          mlon0, mlon1, &
          un_mpi_rank, un_mpi_size, &
@@ -2228,7 +2228,7 @@ subroutine write_dist_to_file( filename, phase, mlatd0,mlatd1,mlond0,mlond1, nnz
 ! phase 1 is after solve - must call both in order!
     use iso_c_binding
     use mpi
-    use params_module, only:nmlat_h,nmlat_T1,nmlon
+    use edyn3d_params_mod, only:nmlat_h,nmlat_T1,nmlon
     use mpi_module, only: mpi_rank,dynamo_world,union_world, lat_rank,lon_rank,&
          nmlat_task,nmlon_task,mygrid_size,&
          mlat0, mlat1, mlon0, mlon1, &

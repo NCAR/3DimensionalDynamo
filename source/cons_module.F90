@@ -1,7 +1,7 @@
 module cons_module
 
   use prec,only: rp, sp
-  use params_module,only:nmlat_h,nmlon
+  use edyn3d_params_mod,only:nmlat_h,nmlon
 
   implicit none
 
