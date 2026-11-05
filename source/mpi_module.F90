@@ -222,7 +222,7 @@ module mpi_module
     integer, intent(in) :: nmlat_in, nmlon_in
 
     integer :: i, j, rnk, rnki, rnkj, mlat0_n, mlat1_n, &
-               mysize_n, mysize_s, cnt, out_int
+               mysize_n, mysize_s, out_int
     integer, dimension(:), allocatable :: task_mygrid_size
 
     allocate(nmlat_task(0:lat_size-1))
@@ -531,8 +531,6 @@ subroutine mpi_sendnorth_mat(nnz_per_row, my_rowptr, my_values, my_cols, &
     integer, dimension(my_recvgrid_size*nnz_per_row), intent(out) :: partner_cols
     real(kind=rp), dimension(my_recvgrid_size*nnz_per_row), intent(out) :: partner_values
 
-    integer :: i, nnz_count
-
 #ifdef PARALLEL
 
     integer ierr
@@ -585,6 +583,8 @@ subroutine mpi_sendnorth_mat(nnz_per_row, my_rowptr, my_values, my_cols, &
 
 #else
 !serial
+    block
+    integer :: i, nnz_count
     do concurrent (i = 1: mygrid_size + 1)
        partner_rowptr(i) = my_rowptr(i)
     enddo
@@ -594,6 +594,7 @@ subroutine mpi_sendnorth_mat(nnz_per_row, my_rowptr, my_values, my_cols, &
        partner_cols(i) = my_cols(i)
        partner_values(i) = my_values(i)
     enddo
+    end block
 
 #endif
 

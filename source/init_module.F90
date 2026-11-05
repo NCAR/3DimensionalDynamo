@@ -109,7 +109,7 @@ module init_module
 
     real(kind=rp),parameter :: hr = h0*1e-3_rp
     integer :: i,j,isn,k,icomp, &
-      nlat,nlon,nalt,ist ! for generating interpolation grids in apex
+      ist ! for generating interpolation grids in apex
     real(kind=rp) :: qdlat,qdlon,alt,gdlat,gdlon, &
 ! scalar arguments returned by APXMALL
       bmag,si,alon,xlatm,vmp,w,d,be3,sim,xlatqd,f

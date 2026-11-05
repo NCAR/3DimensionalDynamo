@@ -73,8 +73,8 @@ module dist_solver_module
 
     use edyn3d_params_mod, only:nmlat_h,nmlat_T1,nmlon
     use cons_module, only:read_fac,jlatm_JT
-    use mpi_module, only: mpi_rank,dynamo_world,union_world, lat_rank,lon_rank,&
-                          nmlat_task,nmlon_task,mygrid_size,&
+    use mpi_module, only: mpi_rank,union_world,&
+                          mygrid_size,&
                           sync_mlat_5d, sync_mlon_5d,&
                           sync_mlat_3d, sync_mlon_3d, &
                           mlat0, mlat1, mlon0, mlon1, &
@@ -116,7 +116,6 @@ module dist_solver_module
     logical :: output_matrix = .false.
     integer :: fileid, Xid, potid
     character(len=200) :: fbuf
-    character(kind=c_char,len=:), allocatable :: newfile
 
     if (output_matrix_count == 0) then
        output_matrix = .true.
@@ -266,11 +265,9 @@ module dist_solver_module
         write(*,*) 'Dist_ls: writing netcdf file ...'
         write(fbuf,'(A,".",I4.4,".nc")') &
              '/glade/derecho/scratch/abaker/dynamo_test', un_mpi_rank
-        !trim it
-        newfile = trim(fbuf)//c_null_char
 
         !call write fcun (1 or 2) - phase 0
-        call write_dist_to_file(newfile, 0, mlatd0,mlatd1,mlond0,mlond1, nnz, g_colind, g_rowptr, g_values_csr, pot_hl_f, z, rhs,fac_hl, pot, sol, fileid, Xid, potid)
+        call write_dist_to_file(trim(fbuf), 0, mlatd0,mlatd1,mlond0,mlond1, nnz, g_colind, g_rowptr, g_values_csr, pot_hl_f, z, rhs,fac_hl, pot, sol, fileid, Xid, potid)
 
       endif
 
@@ -302,7 +299,7 @@ module dist_solver_module
 
      !if output turned on for debugging
      if (output_matrix) then
-        call write_dist_to_file(newfile, 1, mlatd0,mlatd1,mlond0,mlond1, nnz, g_colind, g_rowptr, g_values_csr, pot_hl_f, z, rhs, fac_hl, pot,sol, fileid, Xid, potid)
+        call write_dist_to_file(trim(fbuf), 1, mlatd0,mlatd1,mlond0,mlond1, nnz, g_colind, g_rowptr, g_values_csr, pot_hl_f, z, rhs, fac_hl, pot,sol, fileid, Xid, potid)
         !print *, 'Dist_ls: done with netcdf file'
      endif
 
@@ -325,15 +322,15 @@ module dist_solver_module
 
     use edyn3d_params_mod,only:nmlat_h,nmlat_T1,nmlon
     use cons_module,only:jlatm_JT
-    use mpi_module,only:mpi_rank,mpi_size,dynamo_world,lat_rank,lon_rank, &
-         un_mpi_size, un_mpi_rank, union_world, ex_mpi_rank, &
-         nmlat_task,nmlon_task,mlatd0,mlatd1,mlat0,mlat1, &
+    use mpi_module,only:mpi_rank,lat_rank,lon_rank, &
+         un_mpi_size, un_mpi_rank, ex_mpi_rank, &
+         mlatd0,mlatd1,mlat0,mlat1, &
          mlond0,mlond1,mlon0,mlon1, &
-         lat_size,lon_size,task_lat_offset,ij_start_n,ij_stop_n, &
+         ij_start_n,ij_stop_n, &
          ij_start_s,ij_stop_s,my_recvgrid_size, &
          calc_grid_ij, mpi_sendnorth_mat, &
-         gather_lon_1d, mygrid_size, mpi_partner, &
-         mygrid_size_n, mygrid_size_s, my_sendgrid_size
+         gather_lon_1d, mygrid_size, &
+         mygrid_size_n, mygrid_size_s
 
     integer,intent(in) :: nnz_est
     real(kind=rp),dimension(mlatd0:mlatd1,mlond0:mlond1),intent(in) :: bij
@@ -345,7 +342,7 @@ module dist_solver_module
 
     ! if two hemispheres are uncoupled at high latitudes, set bijSum to zero
     real(kind=rp),parameter :: bijSum = 0
-    integer :: nlonlat,i,j,jS,jN,ij,isub,im,ip, k, cnt
+    integer :: nlonlat,i,j,jS,jN,ij,isub, k, cnt
     integer :: loop_start_i, loop_stop_i, loop_start_j, loop_stop_j
     integer :: nnz_s, nnz_n, row_counter_s, row_counter_n
     integer :: nnz_south, nnz_north, num_row_n, num_row_s
@@ -1159,19 +1156,19 @@ module dist_solver_module
     use edyn3d_params_mod,only:nmlat_h,nmlat_T1,nmlon
     use cons_module,only:phi_pol
     use mpi_module, only:mlatd0, mlatd1, mlat0, mlat1, mpi_rank, &
-         un_mpi_rank, un_mpi_size, ex_mpi_rank, ex_mpi_size, &
+         un_mpi_size, ex_mpi_rank, &
          mlon0, mlon1, mlond0, mlond1, &
          lat_rank, lon_rank, &
          ij_start_s, ij_stop_s, ij_start_n, ij_stop_n, &
          calc_grid_ij, mpi_sendnorth_vec, mygrid_size, &
-         gather_lon_1d, mpi_size, my_sendgrid_size, my_recvgrid_size
+         gather_lon_1d, my_sendgrid_size, my_recvgrid_size
 
     real(kind=rp),dimension(mlatd0:mlatd1,mlond0:mlond1),intent(in) :: coef_10_s, coef_10_n
     real(kind=rp),dimension(mygrid_size) :: rhs
     real(kind=rp),dimension(ij_start_s:ij_stop_s) :: rhs_s
     real(kind=rp),dimension(ij_start_n:ij_stop_n) :: rhs_n
 
-    integer :: i,j,ij, jN, j_start, cnt, istart
+    integer :: i,j,ij, jN, j_start, cnt
 
     real(kind=rp),dimension(nmlon) :: coef10_j1_buf
 
@@ -1564,7 +1561,7 @@ module dist_solver_module
     !most superlu structures are module-level variables
 
     ! Other variables
-    integer(kind=c_int) :: info, ierr, refinement_steps
+    integer(kind=c_int) :: info, refinement_steps
     real(kind=c_double), target :: berr_array(nrhs)
 
     type(c_ptr) :: stat_ptr
@@ -1857,14 +1854,14 @@ end function compute_pattern_hash
 ! based on their latitude ranges (high-lat, transition, low-lat, equator)
     ! give north hemispher to extra processes
 
-    use edyn3d_params_mod,only:nmlat_h,nmlat_T1,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlat_T1
     use cons_module,only:jlatm_JT
     use mpi_module, only:lat_rank, mlat0, mlat1, &
          mlon0, mlon1, mlatd0, mlatd1, mlond0, mlond1, &
-         ij_start_n, ij_stop_n, mpi_size, mpi_rank, &
+         ij_start_n, ij_stop_n, mpi_rank, &
          ij_start_s, ij_stop_s, mygrid_size, &
          calc_grid_ij, my_recvgrid_size, mpi_sendnorth_vec, &
-         my_sendgrid_size, ex_mpi_rank, un_mpi_rank, un_mpi_size
+         my_sendgrid_size, ex_mpi_rank, un_mpi_size
 
     real(kind=rp),dimension(2,mlatd0:mlatd1,mlond0:mlond1),intent(in) :: fin
     real(kind=rp),dimension(mygrid_size) :: fout
@@ -1872,7 +1869,6 @@ end function compute_pattern_hash
     real(kind=rp),dimension(ij_start_s:ij_stop_s) :: fout_s
     real(kind=rp),dimension(ij_start_n:ij_stop_n) :: fout_n
     integer :: i,j,ij, loop_start_j, loop_stop_j, jS, jN, cnt
-    integer :: istart
     real(kind=rp) :: avg
 
     real(kind=rp),dimension(my_sendgrid_size) :: sendbuf
@@ -2006,13 +2002,13 @@ end function compute_pattern_hash
     ! this is the reverse of the dist_flatten
     ! this needs all union procs
 
-    use edyn3d_params_mod,only:nmlat_h,nmlat_T1,nmlon
+    use edyn3d_params_mod,only:nmlat_h,nmlat_T1
     use mpi_module, only:lat_rank, mlat0, mlat1, &
          mlon0, mlon1, &
-         un_mpi_rank, un_mpi_size, &
+         un_mpi_size, &
          ij_start_n, ij_stop_n, &
          ij_start_s, ij_stop_s, lat_rank,  &
-         mygrid_size, mpi_rank, calc_grid_ij, mpi_size, &
+         mygrid_size, mpi_rank, calc_grid_ij, &
          mpi_recvnorth_vec, my_sendgrid_size, my_recvgrid_size
 
     real(kind=rp),dimension(mygrid_size),intent(in) :: fin
@@ -2235,11 +2231,7 @@ subroutine write_dist_to_file( filename, phase, mlatd0,mlatd1,mlond0,mlond1, nnz
     use iso_c_binding
     use mpi
     use edyn3d_params_mod, only:nmlat_h,nmlat_T1,nmlon
-    use mpi_module, only: mpi_rank,dynamo_world,union_world, lat_rank,lon_rank,&
-         nmlat_task,nmlon_task,mygrid_size,&
-         mlat0, mlat1, mlon0, mlon1, &
-         task_csr_rowstarts, mpi_size, &
-         un_mpi_size, un_mpi_rank
+    use mpi_module, only: mygrid_size, task_csr_rowstarts, un_mpi_size
 
     implicit none
     character(len=*), intent(in) :: filename
@@ -2251,7 +2243,7 @@ subroutine write_dist_to_file( filename, phase, mlatd0,mlatd1,mlond0,mlond1, nnz
     integer, intent(in) :: colind(:), rowptr(:)
     integer, intent (inout) :: fileid, Xid, potid
 
-    integer :: ierr, unitno
+    integer :: ierr
     integer :: nlonlat
     integer :: dd(4)
     integer :: mygridsize_id, mygridsizep1_id, nmlatt1_id, nmlon_id, nmlath_id, &

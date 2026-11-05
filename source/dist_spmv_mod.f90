@@ -42,9 +42,8 @@ contains
     type(halo_t), intent(out) :: halo
     integer, intent(out) :: ierr
 
-    integer :: i, j, k, nn, rank, nprocs, jp, tag
+    integer :: i, j, k, nn, rank, jp, tag
     integer, allocatable :: tmp(:)
-    integer :: owner
     integer :: send_to_size, recv_from_size, cnt, indx
     integer :: last_row
     integer :: nowners
@@ -503,7 +502,7 @@ contains
     implicit none
     type(halo_t), intent(in) :: halo
     integer, intent(in) :: comm
-    integer :: rank, ierr, unitno, nprint
+    integer :: rank, ierr, unitno
     character(len=128) :: filename
     
     call MPI_Comm_rank(comm, rank, ierr)

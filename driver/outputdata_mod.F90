@@ -35,7 +35,7 @@ contains
     integer :: J1_s1_vid, J2_s2_vid, M1_s1_vid, M2_s2_vid, M3_p_vid
     integer, allocatable :: xint(:)
     real(r8), allocatable :: xdbl(:)
-    integer :: ndims, nvars, vid, did,  dimsize, dimid,  varsize, varid, n, natts
+    integer :: ndims, nvars, vid, did,  dimsize, dimid, varid, n, natts
     integer, allocatable :: dimids(:)
 
     character(len=32) :: dimname

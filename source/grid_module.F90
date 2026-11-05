@@ -196,7 +196,7 @@ module grid_module
 
 ! given top height and height spacing, calculate the number of height grids
 ! heights are assumed to be parabolically increasing with log-pressure levels (scale height)
-    nhgt_fix = 1 + (sqrt(b**2+4*a*(htop-h0km))-b)/(2*a*dh)
+    nhgt_fix = int(1 + (sqrt(b**2+4*a*(htop-h0km))-b)/(2*a*dh))
 
 ! init height grids and the footpoint latitudes (coupled height-latitude grid)
     allocate(hgt_fix(nhgt_fix))
@@ -227,7 +227,7 @@ module grid_module
     lat0_high = lat_low(nhgt_fix) + ntrans*(dlat_low+dlat_high)/2
 
 ! the number of high-latitude grids
-    nhigh = (90-lat0_high)/dlat_high
+    nhigh = int((90-lat0_high)/dlat_high)
 
 ! the latitude of high-latitude grids
     allocate(lat_high(nhigh))

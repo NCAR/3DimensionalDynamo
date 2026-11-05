@@ -53,10 +53,9 @@ contains
 
     character(len=*), intent(in) :: filepath
 
-    integer :: status, ndims, did, vid
+    integer :: ndims, vid
 
     character(len=*), parameter :: prefix = 'inputdata_init: '
-    character(len=32) :: dim_name
 
     !write(*,*) prefix//' open: ',trim(filepath)
 
@@ -126,7 +125,7 @@ contains
 
   !---------------------------------------------------------------------
   subroutine inputdata_read_s1_fld( varid, time_ndx, fld )
-    use indices_mod, only: flpts1ndx, s1_ndx
+    use indices_mod, only: flpts1ndx
     use dynamo_interface_mod, only: npts_s1
 
     integer, intent(in) :: varid, time_ndx
@@ -136,7 +135,7 @@ contains
     real(r8) :: flddata(nlons1,npflpts1)
     integer :: cnt(3) ! nlons1,npflpts1,ntimes)
     integer :: strt(3)
-    integer :: h,i,j,k, ncnt
+    integer :: h,i,j,k
 
     fld = -huge(1._r8)
 

@@ -248,10 +248,6 @@ contains
     real(rp) :: ntlU_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: ntlV_s2(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
 
-    real(rp) :: coef3d(9,nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
-    real(rp) :: coef2d(9,2,mlatd0:mlatd1,mlond0:mlond1)
-    real(rp) :: src3d(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
-    real(rp) :: src2d(2,mlatd0:mlatd1,mlond0:mlond1)
 
     real(rp) :: N1p_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
     real(rp) :: N1h_s1(nhgt_fix,2,mlatd0:mlatd1,mlond0:mlond1)
