@@ -71,7 +71,7 @@ module dist_solver_module
     ! if potential is read in, pot_hl is used, fac_hl is output
 
 
-    use edyn3d_params_mod, only:nmlat_h,nmlat_T1,nmlon
+    use edyn3d_params_mod, only:nmlat_h,nmlat_T1,nmlon,reproducible
     use cons_module, only:read_fac,jlatm_JT
     use mpi_module, only: mpi_rank,union_world,&
                           mygrid_size,&
@@ -205,6 +205,12 @@ module dist_solver_module
        ! freed with dist_spmv_free(halo) and re-initialized
        if (halo%nprocs_local == 0) then
           call dist_spmv_init(mygrid_size, fst_row, nlonlat, un_mpi_size, un_mpi_rank, g_rowptr, g_colind, task_csr_rowstarts, union_world, halo, ierr)
+          ! for reproducible solutions sum each row of the matvec in the single-task
+          ! column order (the global column numbers depend on the decomposition,
+          ! so summing in their order makes fac_hl depend on the number of tasks)
+          if (reproducible) then
+             call dist_spmv_set_order(dist_canonical_rows(), halo, union_world, ierr)
+          endif
        endif
 
        !optional for DEBUGGING

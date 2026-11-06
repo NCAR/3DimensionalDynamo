@@ -20,6 +20,11 @@ module dist_spmv_mod
      integer, allocatable :: send_to(:)  ! ranks we send data to (list)
      integer, allocatable :: send_cols(:) ! global indices that we need to send to others
      real(c_double), allocatable :: sendbuf(:), recvbuf(:) !for the matvecs
+     ! optional (set by dist_spmv_set_order): decomposition-independent column
+     ! numbers of my local columns (size m_loc) and of my halo columns (size nhalo).
+     ! when set, each row of the matvec is summed in increasing order of these
+     ! numbers, so y does not depend on the number of tasks
+     integer, allocatable :: canon_loc(:), canon_halo(:)
   end type halo_t
 
 contains
@@ -257,31 +262,198 @@ contains
     integer, intent(in) :: comm
     integer, intent(out) :: ierr
 
-    integer :: i, j, jp, p, k, id, starter_k
-    integer :: m_loc, first_row, loc
-    integer :: nprocs
-    integer, parameter :: dp_kind = c_double
+    integer :: i, j, jp, k, starter_k
+    integer :: m_loc, loc
+    integer :: myrank
+
+    ierr = 0
+
+    m_loc = halo%m_loc
+    call MPI_Comm_rank(comm, myrank, ierr)
+
+    ! Zero output
+    y_local = 0.0d0
+
+    ! get the x values of my halo columns into halo%recvbuf
+    call halo_exchange(x_local, halo, comm, ierr)
+
+    ! for each owner O, the entries I receive from O correspond to
+    ! those halo_cols i have whose owner == O, and in the same order
+    ! as they appear in halo%send_cols for owner O.
+    ! which matches my halo_cols by construction
+
+    if (allocated(halo%canon_loc)) then
+       ! sum each row in the decomposition-independent column order
+       call spmv_canonical_order(rowptr, colind, nzval, x_local, y_local, halo)
+       return
+    end if
+
+    ! Finally do local SpMV using halo_values when needed
+    do i = 1, m_loc ! for each row
+       starter_k = 1
+       do j = rowptr(i), rowptr(i+1)-1 !for each col ind
+          jp = j+1 !becuz rowptr is 0-based
+          if (colind(jp) >= halo%fst_row .and. colind(jp) <= halo%last_row) then
+             loc =  colind(jp) - halo%fst_row + 1 !colind is 0-based
+             !debugging
+             if (loc < 1 .or. loc > size(x_local)) then
+                print *, 'dist_spmv ERROR: Rank', myrank, ': loc out of range =', loc, ' colind=', colind(jp), ' fst_row=', halo%fst_row
+             end if
+             if (x_local(loc) /= x_local(loc)) print *, 'dist_spmv ERROR: NaN in x_local at loc=', loc, ' rank=', myrank
+             if (nzval(jp) /= nzval(jp)) print *, 'dist_spmv ERROR: NaN in nzval at jp=', jp
+
+             y_local(i) = y_local(i) + nzval(jp) * x_local(loc)
+          else
+             ! find index into halo_cols
+             ! linear search; can be replaced with hash if halo large
+             ! but since halo_cols and col_ind are sorted, then linear
+             ! for each row, so shouldn't be too bad
+             do k = starter_k, halo%nhalo
+                if (halo%halo_cols(k) == colind(jp)) then
+                   y_local(i) = y_local(i) + nzval(jp) * halo%recvbuf(k)
+                   starter_k = k+1
+                   exit
+                end if
+             end do
+          end if
+       end do
+    end do
+
+   end subroutine dist_spmv
+
+  !----------------------------------------------------------------------
+  ! spmv_canonical_order - local part of dist_spmv when halo%canon_loc/canon_halo
+  !   are set: the products of each row are summed in increasing order of the
+  !   decomposition-independent column numbers (stable for equal numbers), so
+  !   the result is the same for any number of tasks.
+  !   Expects halo%recvbuf to hold the halo x values (see halo_exchange).
+  !   The order is found for every call from colind, so it stays correct
+  !   if the sparsity pattern changes (as long as the halo still covers it).
+  !----------------------------------------------------------------------
+  subroutine spmv_canonical_order(rowptr, colind, nzval, x_local, y_local, halo)
+    integer(c_int), intent(in) :: rowptr(:), colind(:)
+    real(c_double), intent(in) :: nzval(:)
+    real(c_double), intent(in) :: x_local(:)
+    real(c_double), intent(inout) :: y_local(:)
+    type(halo_t), intent(in) :: halo
+
+    integer :: i, j, jp, k, n, nk, starter_k, loc, key, maxrow
+    real(c_double) :: prod
+    integer, allocatable :: keys(:)
+    real(c_double), allocatable :: prods(:)
+
+    maxrow = 0
+    do i = 1, halo%m_loc
+       maxrow = max(maxrow, rowptr(i+1)-rowptr(i))
+    end do
+    allocate(keys(max(maxrow,1)), prods(max(maxrow,1)))
+
+    do i = 1, halo%m_loc ! for each row
+       nk = 0
+       starter_k = 1
+       do j = rowptr(i), rowptr(i+1)-1
+          jp = j+1 !rowptr is 0-based
+          if (colind(jp) >= halo%fst_row .and. colind(jp) <= halo%last_row) then
+             loc = colind(jp) - halo%fst_row + 1 !colind is 0-based
+             key = halo%canon_loc(loc)
+             prod = nzval(jp) * x_local(loc)
+          else
+             ! halo_cols and the colind of a row are both sorted (see dist_spmv)
+             loc = 0
+             do k = starter_k, halo%nhalo
+                if (halo%halo_cols(k) == colind(jp)) then
+                   loc = k
+                   starter_k = k+1
+                   exit
+                end if
+             end do
+             if (loc == 0) cycle ! not in halo (dist_spmv skips these too)
+             key = halo%canon_halo(loc)
+             prod = nzval(jp) * halo%recvbuf(loc)
+          end if
+          ! stable insertion by key
+          n = nk
+          do while (n > 0)
+             if (keys(n) <= key) exit
+             keys(n+1) = keys(n)
+             prods(n+1) = prods(n)
+             n = n-1
+          end do
+          keys(n+1) = key
+          prods(n+1) = prod
+          nk = nk+1
+       end do
+       do k = 1, nk
+          y_local(i) = y_local(i) + prods(k)
+       end do
+    end do
+
+    deallocate(keys, prods)
+
+  end subroutine spmv_canonical_order
+
+  !----------------------------------------------------------------------
+  ! dist_spmv_set_order - make dist_spmv sum each row in a fixed column order
+  !   canon_loc(1:m_loc) : decomposition-independent (e.g. single-task) number
+  !                        of each of my rows/columns
+  !   Must be called by all procs in comm, after dist_spmv_init.
+  !----------------------------------------------------------------------
+  subroutine dist_spmv_set_order(canon_loc, halo, comm, ierr)
+    integer, intent(in) :: canon_loc(:)
+    type(halo_t), intent(inout) :: halo
+    integer, intent(in) :: comm
+    integer, intent(out) :: ierr
+
+    real(c_double), allocatable :: xc(:)
+
+    ierr = 0
+    if (size(canon_loc) /= halo%m_loc) then
+       print *, 'dist_spmv_set_order ERROR: size(canon_loc) /= m_loc ', size(canon_loc), halo%m_loc
+       ierr = 1
+       return
+    end if
+
+    ! exchange the numbers like x values (they are exact in double precision)
+    allocate(xc(halo%m_loc))
+    xc = real(canon_loc, c_double)
+    call halo_exchange(xc, halo, comm, ierr)
+    deallocate(xc)
+
+    if (allocated(halo%canon_loc)) deallocate(halo%canon_loc)
+    if (allocated(halo%canon_halo)) deallocate(halo%canon_halo)
+    allocate(halo%canon_loc(halo%m_loc), halo%canon_halo(halo%nhalo))
+    halo%canon_loc = canon_loc
+    halo%canon_halo = nint(halo%recvbuf(1:halo%nhalo))
+
+  end subroutine dist_spmv_set_order
+
+  !----------------------------------------------------------------------
+  ! halo_exchange - fill halo%recvbuf with the x values of my halo columns
+  !   (in halo%halo_cols order) from their owners
+  !----------------------------------------------------------------------
+  subroutine halo_exchange(x_local, halo, comm, ierr)
+    real(c_double), intent(in) :: x_local(:)
+    type(halo_t), intent(inout) :: halo
+    integer, intent(in) :: comm
+    integer, intent(out) :: ierr
+
+    integer :: p, k, id, first_row
     integer :: reqs_count, total_reqs
     integer, allocatable :: reqs(:)
     integer, allocatable :: stats(:,:)
     integer :: sdis, rdis
     integer :: num_recvs, num_sends
-    integer :: tag, owner, myrank
+    integer :: tag, owner
 
     ierr = 0
     tag = 1315
-    
-    m_loc = halo%m_loc
-    nprocs = halo%nprocs_local
-    first_row = halo%fst_row
-    call MPI_Comm_rank(comm, myrank, ierr)
 
-    ! Zero output and buffersx
-    y_local = 0.0d0
+    first_row = halo%fst_row
+
+    ! Zero buffers
     halo%sendbuf = 0.0d0
     halo%recvbuf = 0.0d0
 
-    
     ! Build send buffer: extract x values for halo_cols, packed in send_order
     do p = 1, halo%nhalo_send
        id = halo%send_cols(p) ! this is the global col id to send (0-based)
@@ -326,47 +498,9 @@ contains
        call MPI_Waitall(reqs_count, reqs, stats, ierr)
     end if
 
-    ! for each owner O, the entries I receive from O correspond to
-    ! those halo_cols i have whose owner == O, and in the same order
-    ! as they appear in halo%send_cols for owner O.
-    ! which matches my halo_cols by construction
-
-    ! Finally do local SpMV using halo_values when needed
-    do i = 1, m_loc ! for each row
-       starter_k = 1
-       do j = rowptr(i), rowptr(i+1)-1 !for each col ind
-          jp = j+1 !becuz rowptr is 0-based
-          if (colind(jp) >= halo%fst_row .and. colind(jp) <= halo%last_row) then
-             loc =  colind(jp) - halo%fst_row + 1 !colind is 0-based
-             !debugging
-             if (loc < 1 .or. loc > size(x_local)) then
-                print *, 'dist_spmv ERROR: Rank', myrank, ': loc out of range =', loc, ' colind=', colind(jp), ' fst_row=', halo%fst_row
-             end if
-             if (x_local(loc) /= x_local(loc)) print *, 'dist_spmv ERROR: NaN in x_local at loc=', loc, ' rank=', myrank
-             if (nzval(jp) /= nzval(jp)) print *, 'dist_spmv ERROR: NaN in nzval at jp=', jp
-             
-             y_local(i) = y_local(i) + nzval(jp) * x_local(loc)
-          else
-             ! find index into halo_cols
-             ! linear search; can be replaced with hash if halo large
-             ! but since halo_cols and col_ind are sorted, then linear
-             ! for each row, so shouldn't be too bad
-             do k = starter_k, halo%nhalo
-                if (halo%halo_cols(k) == colind(jp)) then
-                   y_local(i) = y_local(i) + nzval(jp) * halo%recvbuf(k)
-                   starter_k = k+1
-                   exit
-                end if
-             end do
-          end if
-       end do
-    end do
-
-
-    ! cleanup !FINISH
     deallocate(reqs, stats)
 
-   end subroutine dist_spmv
+  end subroutine halo_exchange
 
   
   !----------------------------------------------------------------------
@@ -386,6 +520,9 @@ contains
     if (allocated(halo%recv_from)) deallocate(halo%recv_from)
     if (allocated(halo%recvbuf)) deallocate(halo%recvbuf)
     if (allocated(halo%sendbuf)) deallocate(halo%sendbuf)
+    if (allocated(halo%canon_loc)) deallocate(halo%canon_loc)
+    if (allocated(halo%canon_halo)) deallocate(halo%canon_halo)
+    halo%nprocs_local = 0
   end subroutine dist_spmv_free
 
   !----------------------------------------------------------------------
